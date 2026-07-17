@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
-import heroTruck from "./assets/hero-truck.webp";
+import heroTruck from "./assets/hero-truck.jpg";
 import {
   Search, Gauge, Zap, Shield, Send, Check, CheckCircle2,
   Settings, LayoutGrid, ChevronRight, Lock, Trash2, SlidersHorizontal,
