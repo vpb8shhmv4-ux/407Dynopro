@@ -307,7 +307,7 @@ function Hero() {
   return (
     <header style={carbon} className="relative overflow-hidden border-b">
       <div style={{ position: "relative", width: "100%", aspectRatio: `${HERO_AR}` }}>
-        <img src={src} alt="407Dynopro · Toyota Tundra TRD"
+        <img src={heroTruck} alt="407Dynopro · Toyota Tundra TRD"
              className="absolute inset-0 w-full h-full" style={{ objectFit: "cover" }} />
 
         {/* Scrim: oscurece la foto para que el titular se lea sin problema */}
