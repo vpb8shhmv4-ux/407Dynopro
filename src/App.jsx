@@ -3,7 +3,8 @@ import heroTruck from "./assets/hero-truck.webp";
 import {
   Search, Gauge, Zap, Shield, Send, Check, CheckCircle2,
   Settings, LayoutGrid, ChevronRight, Lock, Trash2, SlidersHorizontal,
-  Image as ImageIcon, RotateCcw, Cog, CircleDot, Flame, Car, Plus,
+  Image as ImageIcon, RotateCcw, Cog, CircleDot, Flame, Car, Plus, LogOut, Eye, EyeOff,
+  Calendar, GraduationCap, ImagePlus, ChevronDown, Menu, MapPin, Clock,
 } from "lucide-react";
 
 /* ============================================================================
@@ -29,16 +30,102 @@ const HERO_AR = 900 / 630; // ancho / alto
 /* ---------- Datos base del catálogo ---------------------------------------- */
 /* Catálogo de vehículos. Los modelos van como texto separado por comas para que
    el Admin pueda editarlos sin pelear con arrays anidados. */
+/* Catálogo de vehículos. Ahora cada marca tiene modelos, y cada modelo tiene
+   trims con rango de años (yf/yt) porque los trims cambian por generación, no
+   año a año. Los trims se muestran filtrados por el año elegido. Todo editable
+   desde el Admin. Datos verificados contra fuentes de fabricante/dealer (2026).
+   trims: cada uno { name, yf (año desde), yt (año hasta) }. */
 const DEFAULT_VEHICLES = {
   yearFrom: 2020,
   yearTo: 2026,
   makes: [
-    { id: "mk1", name: "Toyota", models: "Tundra" },
-    { id: "mk2", name: "Ford",   models: "F-150" },
-    { id: "mk3", name: "Jeep",   models: "Wrangler" },
-    { id: "mk4", name: "RAM",    models: "RAM 1500" },
+    {
+      id: "mk1", name: "Toyota",
+      models: [
+        { id: "md1", name: "Tundra", trims: [
+          // Gen anterior 2020-2021
+          { name: "SR",           yf: 2020, yt: 2021 },
+          { name: "SR5",          yf: 2020, yt: 2021 },
+          { name: "Limited",      yf: 2020, yt: 2021 },
+          { name: "Platinum",     yf: 2020, yt: 2021 },
+          { name: "1794 Edition", yf: 2020, yt: 2021 },
+          { name: "TRD Pro",      yf: 2020, yt: 2021 },
+          // Gen actual 2022-2026
+          { name: "SR",           yf: 2022, yt: 2026 },
+          { name: "SR5",          yf: 2022, yt: 2026 },
+          { name: "Limited",      yf: 2022, yt: 2026 },
+          { name: "Platinum",     yf: 2022, yt: 2026 },
+          { name: "1794 Edition", yf: 2022, yt: 2026 },
+          { name: "TRD Pro",      yf: 2022, yt: 2026 },
+          { name: "Capstone",     yf: 2022, yt: 2026 },
+        ] },
+      ],
+    },
+    {
+      id: "mk2", name: "Ford",
+      models: [
+        { id: "md2", name: "F-150", trims: [
+          { name: "XL",         yf: 2020, yt: 2026 },
+          { name: "STX",        yf: 2021, yt: 2026 },
+          { name: "XLT",        yf: 2020, yt: 2026 },
+          { name: "Lariat",     yf: 2020, yt: 2026 },
+          { name: "Tremor",     yf: 2021, yt: 2026 },
+          { name: "King Ranch", yf: 2020, yt: 2026 },
+          { name: "Platinum",   yf: 2020, yt: 2026 },
+          { name: "Raptor",     yf: 2021, yt: 2026 },
+        ] },
+      ],
+    },
+    {
+      id: "mk3", name: "Jeep",
+      models: [
+        { id: "md3", name: "Wrangler", trims: [
+          { name: "Sport",       yf: 2020, yt: 2026 },
+          { name: "Sport S",     yf: 2020, yt: 2026 },
+          { name: "Willys",      yf: 2020, yt: 2026 },
+          { name: "Sahara",      yf: 2020, yt: 2026 },
+          { name: "High Altitude", yf: 2021, yt: 2026 },
+          { name: "Rubicon",     yf: 2020, yt: 2026 },
+          { name: "Rubicon X",   yf: 2024, yt: 2026 },
+          { name: "Rubicon 392", yf: 2021, yt: 2026 },
+        ] },
+      ],
+    },
+    {
+      id: "mk4", name: "RAM",
+      models: [
+        { id: "md4", name: "RAM 1500", trims: [
+          // Gen DT 2020-2024
+          { name: "Tradesman",       yf: 2020, yt: 2024 },
+          { name: "Big Horn",        yf: 2020, yt: 2024 },
+          { name: "Laramie",         yf: 2020, yt: 2024 },
+          { name: "Rebel",           yf: 2020, yt: 2024 },
+          { name: "Limited Longhorn", yf: 2020, yt: 2024 },
+          { name: "Limited",         yf: 2020, yt: 2024 },
+          { name: "TRX",             yf: 2021, yt: 2024 },
+          // Nueva gen 2025-2026
+          { name: "Tradesman",       yf: 2025, yt: 2026 },
+          { name: "Big Horn",        yf: 2025, yt: 2026 },
+          { name: "Warlock",         yf: 2025, yt: 2026 },
+          { name: "Laramie",         yf: 2025, yt: 2026 },
+          { name: "Rebel",           yf: 2025, yt: 2026 },
+          { name: "RHO",             yf: 2025, yt: 2026 },
+          { name: "Limited",         yf: 2025, yt: 2026 },
+          { name: "Limited Longhorn", yf: 2025, yt: 2026 },
+          { name: "Tungsten",        yf: 2025, yt: 2026 },
+        ] },
+      ],
+    },
   ],
 };
+
+/* Devuelve los nombres de trim de un modelo, filtrados por año y sin duplicados. */
+function trimsFor(model, year) {
+  if (!model || !Array.isArray(model.trims)) return [];
+  const y = Number(year);
+  const list = model.trims.filter((t) => !y || ((!t.yf || y >= t.yf) && (!t.yt || y <= t.yt)));
+  return [...new Set((y ? list : model.trims).map((t) => t.name))];
+}
 
 /* Iconos disponibles para Performance. Se guarda la CLAVE (string), no el
    componente: así el estado es serializable y el Admin puede cambiarlo. */
@@ -87,6 +174,55 @@ const DEFAULT_ARMOR = [
   { id: "a3", name: "Winch 12,000 lb", desc: "Cabrestante con cable sintético y control inalámbrico.", price: 1150, iconKey: "cog" },
 ];
 
+/* ---------- Contenido demo: Eventos, Cursos y Galería -----------------------
+   URLs de Unsplash con parámetros fijos (w/q) para que carguen estables. Todo
+   editable desde el Panel Admin; estos son solo los valores de arranque. */
+const DEFAULT_EVENTS = [
+  {
+    id: "ev1",
+    title: "Dynopro Off-Road Day",
+    date: "2026-05-16",
+    location: "Ocala, Florida",
+    desc: "Jornada de trail abierto: prueba tu build en terreno real junto al Team Dynopro. Estaciones de flexión, vadeo y dyno móvil.",
+    imageUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=70",
+  },
+];
+
+const DEFAULT_COURSES = [
+  {
+    id: "co1",
+    title: "Fundamentos de Suspensión 4x4",
+    level: "Principiante",
+    duration: "8 horas",
+    desc: "Geometría, tipos de amortiguación, cálculo de lift y alineación de precisión. Teoría + taller práctico sobre una Tundra Stage 2.",
+    imageUrl: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=70",
+  },
+];
+
+const DEFAULT_GALLERY = [
+  {
+    id: "g1",
+    imageUrl: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=70",
+    make: "Toyota", model: "Tundra", optionalText: "Stage 3 · Overland Pro",
+  },
+  {
+    id: "g2",
+    imageUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=70",
+    make: "Ford", model: "F-150", optionalText: "",
+  },
+];
+
+/* ---------- Acceso al panel administrativo ---------------------------------
+   ATENCIÓN — ESTO NO ES SEGURIDAD REAL.
+   Esta comprobación ocurre en el navegador, así que estas credenciales viajan
+   dentro del bundle de JavaScript: cualquiera puede leerlas con DevTools o
+   revisando el repositorio. Solo evita que un visitante casual entre al panel.
+   Para protegerlo de verdad hace falta un backend que valide la sesión y que
+   nunca envíe los datos del admin al cliente sin autorizar.
+   --------------------------------------------------------------------------*/
+const ADMIN_USER = "Admin";
+const ADMIN_PASS = "407Dnpr.humberto26";
+
 /* ---------- Utilidades ------------------------------------------------------ */
 const money = (n) => "$" + Number(n || 0).toLocaleString("en-US");
 
@@ -108,7 +244,7 @@ function StoreProvider({ children }) {
   const [view, setView] = useState("client"); // 'client' | 'admin'
 
   // Vehículo + flujo
-  const [vehicle, setVehicle] = useState({ year: "", make: "", model: "" });
+  const [vehicle, setVehicle] = useState({ year: "", make: "", model: "", trim: "" });
   const [searched, setSearched] = useState(false);
   const [stageId, setStageId] = useState(null);
   const [wheelId, setWheelId] = useState(null);
@@ -126,6 +262,14 @@ function StoreProvider({ children }) {
   const [perf, setPerf] = useState(DEFAULT_PERFORMANCE);
   const [armor, setArmor] = useState(DEFAULT_ARMOR);
   const [vehCat, setVehCat] = useState(DEFAULT_VEHICLES);
+
+  // Sesión del admin (no persiste: al recargar se vuelve a pedir el acceso)
+  const [authed, setAuthed] = useState(false);
+
+  // Contenido de las sub-páginas (editable desde el Admin)
+  const [events, setEvents] = useState(DEFAULT_EVENTS);
+  const [courses, setCourses] = useState(DEFAULT_COURSES);
+  const [gallery, setGallery] = useState(DEFAULT_GALLERY);
 
   // Marca / imágenes
   const [brand, setBrand] = useState({ logoUrl: "", heroUrl: "" });
@@ -159,8 +303,9 @@ function StoreProvider({ children }) {
     vehicle, setVehicle, searched, setSearched,
     stageId, setStageId, wheelId, setWheelId,
     perfIds, setPerfIds, armorIds, setArmorIds, notes, setNotes,
-    leads, setLeads, stages, setStages, brand, setBrand,
+    leads, setLeads, stages, setStages, brand, setBrand, authed, setAuthed,
     wheels, setWheels, perf, setPerf, armor, setArmor, vehCat, setVehCat,
+    events, setEvents, courses, setCourses, gallery, setGallery,
     accentMode, setAccentMode, intensity, setIntensity, theme,
     resetBuild, resetAll,
   };
@@ -307,7 +452,7 @@ function Hero() {
   return (
     <header style={carbon} className="relative overflow-hidden border-b">
       <div style={{ position: "relative", width: "100%", aspectRatio: `${HERO_AR}` }}>
-        <img src={heroTruck} alt="407Dynopro · Toyota Tundra TRD"
+        <img src={src} alt="407Dynopro · Toyota Tundra TRD"
              className="absolute inset-0 w-full h-full" style={{ objectFit: "cover" }} />
 
         {/* Scrim: oscurece la foto para que el titular se lea sin problema */}
@@ -351,10 +496,15 @@ function ShopByVehicle({ scrollTarget }) {
   const makes = useMemo(() => vehCat.makes.map((m) => m.name).filter(Boolean), [vehCat.makes]);
   const models = useMemo(() => {
     const mk = vehCat.makes.find((m) => m.name === local.make);
-    return (mk?.models || "").split(",").map((x) => x.trim()).filter(Boolean);
+    return (mk?.models || []).map((md) => md.name).filter(Boolean);
   }, [vehCat.makes, local.make]);
+  const trims = useMemo(() => {
+    const mk = vehCat.makes.find((m) => m.name === local.make);
+    const md = mk?.models.find((x) => x.name === local.model);
+    return trimsFor(md, local.year);
+  }, [vehCat.makes, local.make, local.model, local.year]);
 
-  const ready = local.year && local.make && local.model;
+  const ready = local.year && local.make && local.model && (trims.length === 0 || local.trim);
 
   const run = () => {
     setVehicle(local);
@@ -371,20 +521,24 @@ function ShopByVehicle({ scrollTarget }) {
           <Search size={18} color={theme.accent} />
           <h3 className="text-lg font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>Shop by Vehicle</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <Select label="Año" placeholder="Seleccionar año" value={local.year}
-                  onChange={(v) => setLocal((s) => ({ ...s, year: v }))} options={years} />
+                  onChange={(v) => setLocal((s) => ({ ...s, year: v, trim: "" }))} options={years} />
           <Select label="Marca" placeholder="Seleccionar marca" value={local.make}
-                  onChange={(v) => setLocal((s) => ({ ...s, make: v, model: "" }))} options={makes} />
+                  onChange={(v) => setLocal((s) => ({ ...s, make: v, model: "", trim: "" }))} options={makes} />
           <Select label="Modelo" placeholder="Seleccionar modelo" value={local.model} disabled={!local.make}
-                  onChange={(v) => setLocal((s) => ({ ...s, model: v }))} options={models} />
+                  onChange={(v) => setLocal((s) => ({ ...s, model: v, trim: "" }))} options={models} />
+          <Select label="Versión / Trim"
+                  placeholder={local.model ? (trims.length ? "Seleccionar trim" : "Sin trims") : "—"}
+                  value={local.trim} disabled={!local.model || trims.length === 0}
+                  onChange={(v) => setLocal((s) => ({ ...s, trim: v }))} options={trims} />
           <Button onClick={run} disabled={!ready} full>
             <Search size={16} /> Buscar
           </Button>
         </div>
         {!ready && (
           <p className="mt-3 text-xs text-zinc-500" style={{ fontFamily: F_MONO }}>
-            › Completa año, marca y modelo para desbloquear tu configuración.
+            › Completa año, marca, modelo y versión para desbloquear tu configuración.
           </p>
         )}
       </div>
@@ -630,7 +784,7 @@ function BuildItYourself() {
     const lead = {
       id: Date.now(),
       when: new Date().toLocaleString("es-US", { dateStyle: "short", timeStyle: "short" }),
-      vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+      vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? " " + vehicle.trim : ""}`,
       stage: stage ? `Stage ${stage.id} ${stage.name}` : "—",
       wheel: wheel?.name || "—",
       addons: [...perfs.map((p) => p.name), ...armors.map((a) => a.name)],
@@ -655,7 +809,7 @@ function BuildItYourself() {
           <div className="flex items-center gap-2 mb-3">
             <Car size={16} color={theme.accent} />
             <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>
-              {vehicle.year} {vehicle.make} {vehicle.model}
+              {vehicle.year} {vehicle.make} {vehicle.model}{vehicle.trim ? ` ${vehicle.trim}` : ""}
             </span>
           </div>
           {lines.length === 0 ? (
@@ -874,16 +1028,36 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
           onChange={(e) => patch(it.id, f.k, e.target.value)}
           style={{ ...inputStyle, resize: "vertical" }} />
       );
-    if (f.type === "select")
+    if (f.type === "select") {
+      // options puede ser un array fijo, o una función (it) => array,
+      // para desplegables dependientes (p.ej. Modelo según la Marca de la fila).
+      const opts = typeof f.options === "function" ? f.options(it) : f.options;
       return (
-        <select {...common} value={it[f.k]} onChange={(e) => patch(it.id, f.k, f.parse ? f.parse(e.target.value) : e.target.value)}>
-          {f.options.map((o) => (
+        <select {...common} value={it[f.k] ?? ""} onChange={(e) => patch(it.id, f.k, f.parse ? f.parse(e.target.value) : e.target.value)}>
+          {f.placeholder && <option value="" style={{ background: "#141417" }}>{f.placeholder}</option>}
+          {opts.map((o) => (
             <option key={String(o.v ?? o)} value={o.v ?? o} style={{ background: "#141417" }}>{o.t ?? o}</option>
           ))}
         </select>
       );
+    }
+    if (f.type === "image")
+      return (
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 overflow-hidden rounded-sm"
+               style={{ width: 52, height: 40, background: "#0a0a0b", border: "1px solid #2a2a2f" }}>
+            {it[f.k]
+              ? <img src={it[f.k]} alt="" className="w-full h-full" style={{ objectFit: "cover" }}
+                     onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
+              : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={14} color="#3a3a40" /></div>}
+          </div>
+          <input {...common} type="text" value={it[f.k] ?? ""} placeholder="https://…"
+                 onChange={(e) => patch(it.id, f.k, e.target.value)} />
+        </div>
+      );
     return (
-      <input {...common} type={f.type === "number" ? "number" : "text"} value={it[f.k] ?? ""}
+      <input {...common} type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+        value={it[f.k] ?? ""}
         onChange={(e) => patch(it.id, f.k, f.type === "number" ? Number(e.target.value) : e.target.value)} />
     );
   };
@@ -928,8 +1102,21 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
 
 function VehiclesManager() {
   const { vehCat, setVehCat, theme } = useStore();
-  const patchMake = (id, k, v) =>
-    setVehCat({ ...vehCat, makes: vehCat.makes.map((m) => (m.id === id ? { ...m, [k]: v } : m)) });
+
+  // Helpers inmutables sobre el árbol makes -> models -> trims
+  const setMakes = (makes) => setVehCat({ ...vehCat, makes });
+  const patchMake = (mid, k, v) => setMakes(vehCat.makes.map((m) => (m.id === mid ? { ...m, [k]: v } : m)));
+  const mapModels = (mid, fn) => setMakes(vehCat.makes.map((m) => (m.id === mid ? { ...m, models: fn(m.models) } : m)));
+  const patchModel = (mid, did, k, v) => mapModels(mid, (ms) => ms.map((d) => (d.id === did ? { ...d, [k]: v } : d)));
+  const mapTrims = (mid, did, fn) => mapModels(mid, (ms) => ms.map((d) => (d.id === did ? { ...d, trims: fn(d.trims || []) } : d)));
+  const patchTrim = (mid, did, i, k, v) =>
+    mapTrims(mid, did, (ts) => ts.map((t, idx) => (idx === i ? { ...t, [k]: k === "name" ? v : Number(v) } : t)));
+
+  const dashBtn = {
+    fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "#1c1c20",
+    color: "#e7e7ea", border: `1px dashed ${theme.accentLine}`,
+  };
+
   return (
     <AdminPanel title="Catálogo de Vehículos" icon={Car}>
       <div className="space-y-4">
@@ -944,33 +1131,75 @@ function VehiclesManager() {
           </AdminField>
         </div>
 
+        <p className="text-xs text-zinc-500" style={{ fontFamily: F_MONO }}>
+          › Cada trim tiene un rango de años (desde / hasta). El cliente solo verá los trims válidos para el año que elija.
+        </p>
+
         {vehCat.makes.map((m) => (
           <div key={m.id} className="rounded-md p-4" style={{ background: "#101013", border: "1px solid #22222a" }}>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-              <div className="md:col-span-4">
+            {/* Marca */}
+            <div className="flex items-end gap-3 mb-3">
+              <div className="flex-1 max-w-xs">
                 <AdminField label="Marca">
                   <input value={m.name} className="w-full px-3 py-2 text-sm outline-none rounded-sm" style={inputStyle}
                          onChange={(e) => patchMake(m.id, "name", e.target.value)} />
                 </AdminField>
               </div>
-              <div className="md:col-span-7">
-                <AdminField label="Modelos (separados por coma)">
-                  <input value={m.models} className="w-full px-3 py-2 text-sm outline-none rounded-sm" style={inputStyle}
-                         onChange={(e) => patchMake(m.id, "models", e.target.value)} />
-                </AdminField>
-              </div>
-              <div className="md:col-span-1 flex justify-end pb-2">
-                <button onClick={() => setVehCat({ ...vehCat, makes: vehCat.makes.filter((x) => x.id !== m.id) })}
-                        className="text-zinc-600 hover:text-red-400 transition"><Trash2 size={14} /></button>
-              </div>
+              <button onClick={() => setMakes(vehCat.makes.filter((x) => x.id !== m.id))}
+                      className="text-zinc-600 hover:text-red-400 transition pb-2" title="Eliminar marca"><Trash2 size={15} /></button>
+            </div>
+
+            {/* Modelos de la marca */}
+            <div className="space-y-3 pl-3" style={{ borderLeft: `2px solid ${theme.accentLine}` }}>
+              {(m.models || []).map((d) => (
+                <div key={d.id} className="rounded-sm p-3" style={{ background: "#0c0c0f", border: "1px solid #22222a" }}>
+                  <div className="flex items-end gap-3 mb-2">
+                    <div className="flex-1 max-w-xs">
+                      <AdminField label="Modelo">
+                        <input value={d.name} className="w-full px-3 py-2 text-sm outline-none rounded-sm" style={inputStyle}
+                               onChange={(e) => patchModel(m.id, d.id, "name", e.target.value)} />
+                      </AdminField>
+                    </div>
+                    <button onClick={() => mapModels(m.id, (ms) => ms.filter((x) => x.id !== d.id))}
+                            className="text-zinc-600 hover:text-red-400 transition pb-2" title="Eliminar modelo"><Trash2 size={14} /></button>
+                  </div>
+
+                  {/* Trims del modelo */}
+                  <span className="block text-[10px] uppercase text-zinc-500 mb-1.5 font-semibold"
+                        style={{ letterSpacing: "0.12em", fontFamily: F_MONO }}>Trims / versiones</span>
+                  <div className="space-y-2">
+                    {(d.trims || []).map((t, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input value={t.name} placeholder="Nombre del trim"
+                               className="flex-1 px-3 py-1.5 text-sm outline-none rounded-sm" style={inputStyle}
+                               onChange={(e) => patchTrim(m.id, d.id, i, "name", e.target.value)} />
+                        <input type="number" value={t.yf} title="Año desde"
+                               className="w-20 px-2 py-1.5 text-sm outline-none rounded-sm" style={inputStyle}
+                               onChange={(e) => patchTrim(m.id, d.id, i, "yf", e.target.value)} />
+                        <span className="text-zinc-600 text-xs">–</span>
+                        <input type="number" value={t.yt} title="Año hasta"
+                               className="w-20 px-2 py-1.5 text-sm outline-none rounded-sm" style={inputStyle}
+                               onChange={(e) => patchTrim(m.id, d.id, i, "yt", e.target.value)} />
+                        <button onClick={() => mapTrims(m.id, d.id, (ts) => ts.filter((_, idx) => idx !== i))}
+                                className="text-zinc-600 hover:text-red-400 transition" title="Eliminar trim"><Trash2 size={13} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => mapTrims(m.id, d.id, (ts) => [...ts, { name: "Nuevo trim", yf: vehCat.yearFrom, yt: vehCat.yearTo }])}
+                            className="text-xs uppercase font-semibold px-3 py-1.5 rounded-sm transition hover:brightness-110 flex items-center gap-1.5"
+                            style={dashBtn}><Plus size={12} /> Trim</button>
+                  </div>
+                </div>
+              ))}
+              <button onClick={() => mapModels(m.id, (ms) => [...ms, { id: "md" + Date.now(), name: "Nuevo modelo", trims: [] }])}
+                      className="text-xs uppercase font-semibold px-3 py-1.5 rounded-sm transition hover:brightness-110 flex items-center gap-1.5"
+                      style={dashBtn}><Plus size={13} /> Modelo</button>
             </div>
           </div>
         ))}
 
-        <button onClick={() => setVehCat({ ...vehCat, makes: [...vehCat.makes, { id: "mk" + Date.now(), name: "", models: "" }] })}
+        <button onClick={() => setMakes([...vehCat.makes, { id: "mk" + Date.now(), name: "", models: [] }])}
                 className="w-full py-2.5 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110 flex items-center justify-center gap-2"
-                style={{ fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "#1c1c20",
-                         color: "#e7e7ea", border: `1px dashed ${theme.accentLine}` }}>
+                style={dashBtn}>
           <Plus size={14} /> Agregar Marca
         </button>
       </div>
@@ -1101,14 +1330,350 @@ function LeadsConsole() {
   );
 }
 
+function EventsManager() {
+  const { events, setEvents } = useStore();
+  return (
+    <CatalogEditor
+      title="Evento" icon={Calendar}
+      items={events} setItems={setEvents}
+      makeNew={() => ({ id: "ev" + Date.now(), title: "Nuevo evento", date: "", location: "", desc: "", imageUrl: "" })}
+      fields={[
+        { k: "imageUrl", label: "Foto (URL)", type: "image",    span: "md:col-span-12" },
+        { k: "title",    label: "Título",     type: "text",     span: "md:col-span-6" },
+        { k: "date",     label: "Fecha",      type: "date",     span: "md:col-span-3" },
+        { k: "location", label: "Ubicación",  type: "text",     span: "md:col-span-3" },
+        { k: "desc",     label: "Descripción", type: "textarea", span: "md:col-span-12" },
+      ]}
+    />
+  );
+}
+
+function CoursesManager() {
+  const { courses, setCourses } = useStore();
+  return (
+    <CatalogEditor
+      title="Curso" icon={GraduationCap}
+      items={courses} setItems={setCourses}
+      makeNew={() => ({ id: "co" + Date.now(), title: "Nuevo curso", level: "Principiante", duration: "", desc: "", imageUrl: "" })}
+      fields={[
+        { k: "imageUrl", label: "Foto (URL)", type: "image",  span: "md:col-span-12" },
+        { k: "title",    label: "Título",     type: "text",   span: "md:col-span-6" },
+        { k: "level",    label: "Nivel",      type: "select", span: "md:col-span-3",
+          options: ["Principiante", "Intermedio", "Avanzado", "Pro / Certificación"] },
+        { k: "duration", label: "Duración",   type: "text",   span: "md:col-span-3" },
+        { k: "desc",     label: "Temario / descripción", type: "textarea", span: "md:col-span-12" },
+      ]}
+    />
+  );
+}
+
+function GalleryManager() {
+  const { gallery, setGallery, vehCat } = useStore();
+  const makeOpts = vehCat.makes.map((m) => m.name).filter(Boolean);
+  const modelOpts = (it) => {
+    const mk = vehCat.makes.find((m) => m.name === it.make);
+    return (mk?.models || []).map((md) => md.name).filter(Boolean);
+  };
+  return (
+    <CatalogEditor
+      title="Foto de Galería" icon={ImagePlus}
+      items={gallery} setItems={setGallery}
+      note="El Texto Opcional queda vacío por defecto. Si lo llenas, aparece como overlay sobre la foto; si no, la tarjeta muestra solo la imagen."
+      makeNew={() => ({ id: "g" + Date.now(), imageUrl: "", make: "", model: "", optionalText: "" })}
+      fields={[
+        { k: "imageUrl",     label: "Foto (URL)", type: "image",  span: "md:col-span-12" },
+        { k: "make",         label: "Marca",      type: "select", span: "md:col-span-4",
+          placeholder: "Todas", options: makeOpts },
+        { k: "model",        label: "Modelo",     type: "select", span: "md:col-span-4",
+          placeholder: "—", options: modelOpts },
+        { k: "optionalText", label: "Texto opcional (overlay)", type: "text", span: "md:col-span-4" },
+      ]}
+    />
+  );
+}
+
+/* ============================================================================
+   SUB-PÁGINAS DE USUARIO (Eventos · Cursos · Galería)
+   ==========================================================================*/
+function PageHead({ eyebrow, title, sub }) {
+  return (
+    <div className="mb-10">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <SectionTitle sub={sub}>{title}</SectionTitle>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, text }) {
+  return (
+    <div className="py-20 text-center">
+      <Icon size={38} color="#3a3a40" className="mx-auto" />
+      <p className="mt-4 text-zinc-500" style={{ fontFamily: F_BODY }}>{text}</p>
+    </div>
+  );
+}
+
+/* Imagen con placeholder: si la URL falla, muestra un fondo carbón con icono */
+function SafeImg({ src, alt, ratio = "16 / 9", className = "" }) {
+  const [ok, setOk] = useState(true);
+  return (
+    <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: ratio, background: "#0f0f12" }}>
+      {ok && src ? (
+        <img src={src} alt={alt || ""} className="absolute inset-0 w-full h-full"
+             style={{ objectFit: "cover" }} loading="lazy" onError={() => setOk(false)} />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center" style={carbon}>
+          <ImageIcon size={26} color="#3a3a40" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventsView() {
+  const { events, theme } = useStore();
+  const fmt = (d) => {
+    if (!d) return "Por confirmar";
+    const dt = new Date(d + "T00:00:00");
+    return isNaN(dt) ? d : dt.toLocaleDateString("es-US", { day: "2-digit", month: "long", year: "numeric" });
+  };
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <PageHead eyebrow="Comunidad Dynopro" title="Eventos"
+                sub="Trail days, meets y activaciones del Team Dynopro. Nos vemos en el fango." />
+      {events.length === 0 ? (
+        <EmptyState icon={Calendar} text="No hay eventos programados por ahora. Vuelve pronto." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {events.map((ev) => (
+            <Reveal key={ev.id}>
+              <article className="flex flex-col h-full rounded-md overflow-hidden"
+                       style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                <SafeImg src={ev.imageUrl} alt={ev.title} />
+                <div className="p-5 flex flex-col flex-1">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase mb-2"
+                        style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.1em" }}>
+                    <Calendar size={13} /> {fmt(ev.date)}
+                  </span>
+                  <h3 className="text-xl font-bold text-white uppercase leading-tight" style={{ fontFamily: F_DISPLAY }}>{ev.title}</h3>
+                  {ev.location && (
+                    <span className="inline-flex items-center gap-1.5 text-sm text-zinc-400 mt-1.5" style={{ fontFamily: F_BODY }}>
+                      <MapPin size={14} color={theme.accent} /> {ev.location}
+                    </span>
+                  )}
+                  {ev.desc && <p className="mt-3 text-sm text-zinc-400 leading-relaxed" style={{ fontFamily: F_BODY }}>{ev.desc}</p>}
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CoursesView() {
+  const { courses, theme } = useStore();
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <PageHead eyebrow="Academia Dynopro" title="Cursos"
+                sub="Formación técnica en suspensión, performance y build 4x4. Teoría y taller práctico." />
+      {courses.length === 0 ? (
+        <EmptyState icon={GraduationCap} text="Aún no hay cursos publicados. Vuelve pronto." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {courses.map((co) => (
+            <Reveal key={co.id}>
+              <article className="flex flex-col h-full rounded-md overflow-hidden"
+                       style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                <SafeImg src={co.imageUrl} alt={co.title} />
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {co.level && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-sm uppercase font-semibold"
+                            style={{ background: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accentLine}`, fontFamily: F_MONO, letterSpacing: "0.1em" }}>
+                        {co.level}
+                      </span>
+                    )}
+                    {co.duration && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase text-zinc-400" style={{ fontFamily: F_MONO, letterSpacing: "0.1em" }}>
+                        <Clock size={12} /> {co.duration}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-white uppercase leading-tight" style={{ fontFamily: F_DISPLAY }}>{co.title}</h3>
+                  {co.desc && <p className="mt-3 text-sm text-zinc-400 leading-relaxed" style={{ fontFamily: F_BODY }}>{co.desc}</p>}
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GalleryView() {
+  const { gallery, vehCat, theme } = useStore();
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+
+  const makes = vehCat.makes.map((m) => m.name).filter(Boolean);
+  const models = useMemo(() => {
+    const mk = vehCat.makes.find((m) => m.name === make);
+    return (mk?.models || []).map((md) => md.name).filter(Boolean);
+  }, [vehCat.makes, make]);
+
+  const shown = gallery.filter((g) => (!make || g.make === make) && (!model || g.model === model));
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <PageHead eyebrow="Builds reales" title="Galería de Fotos"
+                sub="Trabajos del taller. Filtra por marca y modelo para ver builds como el tuyo." />
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-lg">
+        <Select label="Marca" placeholder="Todas las marcas" value={make}
+                onChange={(v) => { setMake(v); setModel(""); }} options={makes} />
+        <Select label="Modelo" placeholder="Todos los modelos" value={model} disabled={!make}
+                onChange={setModel} options={models} />
+      </div>
+
+      {shown.length === 0 ? (
+        <EmptyState icon={ImageIcon} text="No hay fotos para ese filtro todavía." />
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          {shown.map((g) => (
+            <Reveal key={g.id}>
+              {/* Regla: solo foto. El overlay de texto aparece SOLO si optionalText tiene contenido. */}
+              <div className="relative rounded-md overflow-hidden group"
+                   style={{ border: "1px solid #2a2a2f" }}>
+                <SafeImg src={g.imageUrl} alt={g.optionalText || `${g.make} ${g.model}`} ratio="1 / 1" />
+                {g.optionalText && g.optionalText.trim() !== "" && (
+                  <div className="absolute inset-x-0 bottom-0 p-3"
+                       style={{ background: "linear-gradient(180deg, transparent, rgba(8,8,10,0.9))" }}>
+                    <span className="text-xs font-semibold uppercase text-white"
+                          style={{ fontFamily: F_DISPLAY, letterSpacing: "0.04em", textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>
+                      {g.optionalText}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminLogin() {
+  const { setAuthed, theme, brand } = useStore();
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = () => {
+    if (user.trim() === ADMIN_USER && pass === ADMIN_PASS) {
+      setErr(""); setAuthed(true);
+    } else {
+      setErr("Usuario o clave incorrectos."); setPass("");
+    }
+  };
+  const onKey = (e) => { if (e.key === "Enter") submit(); };
+
+  const field = {
+    background: "#101013", color: "#f2f2f4",
+    border: "1px solid #2a2a2f", fontFamily: F_BODY,
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
+      <div className="mx-auto" style={{ maxWidth: 430 }}>
+        <div className="rounded-md p-7"
+             style={{ ...carbon, border: "1px solid #2a2a2f", boxShadow: "0 24px 60px rgba(0,0,0,0.55)" }}>
+
+          <div className="flex items-center justify-center mb-5">
+            <div className="flex items-center justify-center rounded-md"
+                 style={{ width: 52, height: 52, background: theme.accentSoft,
+                          border: `1px solid ${theme.accentLine}` }}>
+              <Lock size={22} color={theme.accent} />
+            </div>
+          </div>
+
+          <div className="text-center mb-6">
+            <div className="flex justify-center"><Eyebrow>Acceso restringido</Eyebrow></div>
+            <h2 className="text-2xl font-bold text-white uppercase leading-none"
+                style={{ fontFamily: F_DISPLAY }}>
+              Panel Administrativo
+            </h2>
+            <p className="mt-2 text-xs text-zinc-500" style={{ fontFamily: F_BODY }}>
+              Solo para el Team Dynopro.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <label className="block">
+              <span className="block text-xs uppercase text-zinc-500 mb-1.5 font-semibold"
+                    style={{ letterSpacing: "0.14em", fontFamily: F_MONO }}>Usuario</span>
+              <input type="text" value={user} onChange={(e) => setUser(e.target.value)} onKeyDown={onKey}
+                     autoComplete="username" placeholder="Admin"
+                     className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+            </label>
+
+            <label className="block">
+              <span className="block text-xs uppercase text-zinc-500 mb-1.5 font-semibold"
+                    style={{ letterSpacing: "0.14em", fontFamily: F_MONO }}>Clave</span>
+              <div style={{ position: "relative" }}>
+                <input type={show ? "text" : "password"} value={pass} onKeyDown={onKey}
+                       onChange={(e) => setPass(e.target.value)} autoComplete="current-password"
+                       placeholder="••••••••••"
+                       className="w-full px-3 py-3 text-sm outline-none rounded-sm"
+                       style={{ ...field, paddingRight: 44 }} />
+                <button onClick={() => setShow((v) => !v)} type="button"
+                        title={show ? "Ocultar clave" : "Mostrar clave"}
+                        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}
+                        className="p-1.5 text-zinc-500 hover:text-zinc-200 transition">
+                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+
+            {err && (
+              <p className="text-xs px-3 py-2 rounded-sm"
+                 style={{ color: "#fca5a5", background: "rgba(220,38,38,0.10)",
+                          border: "1px solid rgba(220,38,38,0.35)", fontFamily: F_MONO }}>
+                › {err}
+              </p>
+            )}
+
+            <Button onClick={submit} full disabled={!user || !pass}>
+              <Lock size={15} /> Ingresar
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminView() {
+  const { authed, setAuthed } = useStore();
+  if (!authed) return <AdminLogin />;
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-      <div>
-        <Eyebrow>Backend Control · Simulado</Eyebrow>
-        <SectionTitle sub="Edita el catálogo completo: vehículos, Stages, rines, performance y armor. Todo se sincroniza con la Vista Cliente en tiempo real.">
-          Panel Administrativo
-        </SectionTitle>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Eyebrow>Backend Control · Simulado</Eyebrow>
+          <SectionTitle sub="Edita el catálogo completo: vehículos, Stages, rines, performance y armor. Todo se sincroniza con la Vista Cliente en tiempo real.">
+            Panel Administrativo
+          </SectionTitle>
+        </div>
+        <Button variant="ghost" onClick={() => setAuthed(false)}>
+          <LogOut size={14} /> Salir
+        </Button>
       </div>
       <StyleControls />
       <VehiclesManager />
@@ -1116,6 +1681,9 @@ function AdminView() {
       <WheelsManager />
       <PerformanceManager />
       <ArmorManager />
+      <EventsManager />
+      <CoursesManager />
+      <GalleryManager />
       <LeadsConsole />
     </div>
   );
@@ -1126,14 +1694,35 @@ function AdminView() {
    ==========================================================================*/
 function DevNav() {
   const { view, setView, brand, theme, leads } = useStore();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Cerrar el menú al hacer click fuera o con Escape
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
   const tabs = [
     { id: "client", label: "Vista Cliente", icon: LayoutGrid },
-    { id: "admin", label: "Panel Admin", icon: Settings },
   ];
+  const menu = [
+    { id: "events",  label: "Eventos",           icon: Calendar },
+    { id: "courses", label: "Cursos",            icon: GraduationCap },
+    { id: "gallery", label: "Galería de Fotos",  icon: ImagePlus },
+    { id: "admin",   label: "Panel Admin",       icon: Settings },
+  ];
+  const go = (id) => { setView(id); setOpen(false); };
+  const activeMenu = menu.find((m) => m.id === view);
+
   return (
     <nav className="sticky top-0 z-50 border-b" style={{ background: "rgba(10,10,11,0.9)", backdropFilter: "blur(8px)", borderColor: "#1e1e22" }}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <button onClick={() => setView("client")} className="flex items-center gap-2" title="Ir al inicio">
           {brand.logoUrl ? (
             <img src={brand.logoUrl} alt="407Dynopro" style={{ height: 28 }} onError={(e) => (e.currentTarget.style.display = "none")} />
           ) : (
@@ -1143,7 +1732,8 @@ function DevNav() {
           )}
           <span className="hidden md:inline text-[10px] px-2 py-0.5 rounded-sm uppercase text-zinc-500"
                 style={{ border: "1px solid #2a2a2f", fontFamily: F_MONO, letterSpacing: "0.1em" }}>dev preview</span>
-        </div>
+        </button>
+
         <div className="flex items-center gap-2">
           {tabs.map((t) => {
             const on = view === t.id;
@@ -1157,12 +1747,54 @@ function DevNav() {
                                border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
                 <Icon size={14} />
                 <span className="hidden sm:inline">{t.label}</span>
-                {t.id === "admin" && leads.length > 0 && (
-                  <span className="ml-1 text-[10px] px-1.5 rounded-full" style={{ background: on ? "#0a0a0b" : theme.accent, color: on ? theme.accent : "#0a0a0b", fontFamily: F_MONO }}>{leads.length}</span>
-                )}
               </button>
             );
           })}
+
+          {/* Menú desplegable */}
+          <div style={{ position: "relative" }} ref={menuRef}>
+            <button onClick={() => setOpen((v) => !v)}
+                    className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
+                    style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
+                             background: activeMenu ? theme.accent : "transparent",
+                             color: activeMenu ? "#0a0a0b" : "#a8a8b0",
+                             border: `1px solid ${activeMenu ? theme.accent : "#2a2a2f"}` }}>
+              <Menu size={14} />
+              <span className="hidden sm:inline">{activeMenu ? activeMenu.label : "Menú"}</span>
+              <ChevronDown size={13} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+              {leads.length > 0 && !activeMenu && (
+                <span className="text-[10px] px-1.5 rounded-full" style={{ background: theme.accent, color: "#0a0a0b", fontFamily: F_MONO }}>{leads.length}</span>
+              )}
+            </button>
+
+            {open && (
+              <div className="absolute right-0 mt-2 py-1.5 rounded-md overflow-hidden"
+                   style={{ minWidth: 210, zIndex: 60,
+                            background: "rgba(18,18,21,0.92)",
+                            backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            boxShadow: "0 16px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.10)" }}>
+                {menu.map((m) => {
+                  const on = view === m.id;
+                  const Icon = m.icon;
+                  return (
+                    <button key={m.id} onClick={() => go(m.id)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition hover:brightness-125"
+                            style={{ fontFamily: F_BODY, textAlign: "left",
+                                     background: on ? theme.accentSoft : "transparent",
+                                     color: on ? "#fff" : "#c9c9cf" }}>
+                      <Icon size={15} color={on ? theme.accent : "#8a8a92"} />
+                      <span className="flex-1">{m.label}</span>
+                      {m.id === "admin" && leads.length > 0 && (
+                        <span className="text-[10px] px-1.5 rounded-full" style={{ background: theme.accent, color: "#0a0a0b", fontFamily: F_MONO }}>{leads.length}</span>
+                      )}
+                      {on && <span style={{ width: 6, height: 6, borderRadius: 999, background: theme.accent }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
@@ -1270,6 +1902,7 @@ function Shell() {
 
       /* 3. Campos de escritura: cursor de texto (va después para ganar el empate) */
       .dp-app input[type="text"], .dp-app input[type="number"],
+      .dp-app input[type="password"], .dp-app input[type="email"],
       .dp-app input:not([type]), .dp-app textarea { cursor: text !important; }
 
       /* 4. Deshabilitado: no invitamos al clic */
@@ -1289,7 +1922,11 @@ function Shell() {
       }}
     >
       <DevNav />
-      {view === "client" ? <ClientView /> : <AdminView />}
+      {view === "admin" ? <AdminView />
+        : view === "events" ? <EventsView />
+        : view === "courses" ? <CoursesView />
+        : view === "gallery" ? <GalleryView />
+        : <ClientView />}
       <CursorGlow />
     </div>
   );
