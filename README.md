@@ -5,12 +5,15 @@ React + Vite + Tailwind CSS. Todo el estado vive en memoria: no hay backend.
 
 ## Qué incluye
 
+- **Sub-páginas** (menú desplegable arriba a la derecha): **Eventos**, **Cursos** y
+  **Galería de Fotos** (con filtro por marca y modelo).
 - **Vista Cliente**: buscador "Shop by Vehicle" (año / marca / modelo) y flujo de
   configuración en cascada — Stages de suspensión 1–4, rines y cauchos con
   compatibilidad por Stage, performance packages, armor, y el módulo final
   "Ármalo tú mismo" con resumen dinámico del build.
 - **Panel Administrativo**: edición en vivo de todo el catálogo (vehículos,
-  Stages, rines, performance, armor), color de acento, imágenes y consola de leads.
+  Stages, rines, performance, armor, eventos, cursos y galería), color de acento,
+  imágenes y consola de leads. Acceso protegido por login (usuario **Admin**).
 
 Se cambia de vista con el menú superior (etiqueta "dev preview").
 

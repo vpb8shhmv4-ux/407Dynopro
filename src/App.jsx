@@ -1,10 +1,17 @@
-import { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
+import { useState, useEffect, useRef, useMemo, createContext, useContext, Fragment } from "react";
 import heroTruck from "./assets/hero-truck.webp";
+import tundraCutout from "./assets/tundra-callout.webp";
+import kitBds7in from "./assets/kit-bds-7in.webp";
+import kitBdsUca from "./assets/kit-bds-uca.webp";
+import kitRlSpacer from "./assets/kit-readylift-spacer.webp";
+import productBg from "./assets/product-bg.webp";
+import productTruck from "./assets/product-truck.webp";
 import {
   Search, Gauge, Zap, Shield, Send, Check, CheckCircle2,
   Settings, LayoutGrid, ChevronRight, Lock, Trash2, SlidersHorizontal,
   Image as ImageIcon, RotateCcw, Cog, CircleDot, Flame, Car, Plus, LogOut, Eye, EyeOff,
-  Calendar, GraduationCap, ImagePlus, ChevronDown, Menu, MapPin, Clock,
+  Calendar, GraduationCap, ImagePlus, ChevronDown, Menu, MapPin, Clock, Wrench,
+  ArrowLeft, ExternalLink, AlertTriangle, Phone, User,
 } from "lucide-react";
 
 /* ============================================================================
@@ -25,6 +32,51 @@ const F_MONO = "'JetBrains Mono',ui-monospace,'Courier New',monospace";
    porque todas las posiciones de efectos se calculan como % sobre ella.
    --------------------------------------------------------------------------*/
 const HERO_PHOTO = heroTruck;
+
+/* Recorte del Toyota Tundra 2023-ON (frente sobresale del callout) */
+const TUNDRA_CUTOUT = tundraCutout;
+
+/* Fotos de los componentes (del fabricante: BDS Suspension y ReadyLIFT) */
+const KIT_BDS_7IN = kitBds7in;
+const KIT_BDS_UCA = kitBdsUca;
+const KIT_RL_SPACER = kitRlSpacer;
+
+/* Foto original del build en dos capas alineadas (fondo sin camioneta + camioneta) */
+const PRODUCT_BG = productBg;
+const PRODUCT_TRUCK = productTruck;
+
+/* Producto destacado preconfigurado. Editable desde el Panel Admin.
+   Precio 0 = se muestra "A cotizar". */
+const DEFAULT_PRODUCT = {
+  title: "Toyota Tundra 2023 – ON",
+  subtitle: 'Build de suspensión BDS 7" para correr llantas de 37" a 40"',
+  fitment: "Toyota Tundra 2023 en adelante · 4WD",
+  basePrice: 0,
+  tires: [
+    { id: "37", label: '37"', price: 0, note: "Entra con el kit, sin cortes en la carrocería." },
+    { id: "40", label: '40"', price: 0, note: "Requiere trimming y ajuste de guardafangos para el clearance." },
+  ],
+  includes: [
+    {
+      id: "inc1", brand: "BDS Suspension", name: '7" Lift Kit · Toyota Tundra (22-26) 4WD', sku: "BDS840PES",
+      desc: 'Crossmembers de acero de 1/4", skid plates completos, nudillos de dirección CNC, reubicación de diferencial, resortes traseros Pro-Ride y coilovers FOX.',
+      img: KIT_BDS_7IN,
+      url: "https://bds-suspension.com/products/7-inch-lift-kit-toyota-tundra-22-26-4wd?variant=67029889778035",
+    },
+    {
+      id: "inc2", brand: "BDS Suspension", name: "Upper Control Arm Kit · Toyota Tundra (22-26)", sku: "BDS128254",
+      desc: 'Brazos superiores tubulares de 1.5" con rótulas engrasables y copa indexada: más recorrido y alineación correcta en trucks levantados.',
+      img: KIT_BDS_UCA,
+      url: "https://bds-suspension.com/products/upper-control-arm-kit-toyota-tundra-22-26-8af0eec1",
+    },
+    {
+      id: "inc3", brand: "ReadyLIFT", name: '2" Rear Spacer Kit · Toyota Tundra (22-26)', sku: "26-52200",
+      desc: 'Espaciadores traseros de acero para los resortes: 2" extra atrás para nivelar el stance del build.',
+      img: KIT_RL_SPACER,
+      url: "https://www.readylift.com/2-rear-spacer-kit-2022-2025-toyota-tundra.html",
+    },
+  ],
+};
 const HERO_AR = 900 / 630; // ancho / alto
 
 /* ---------- Datos base del catálogo ---------------------------------------- */
@@ -212,6 +264,15 @@ const DEFAULT_GALLERY = [
   },
 ];
 
+/* Opciones de instalación y extras que aparecen al final, tras elegir todo. */
+const FINAL_OPTIONS = [
+  { id: "install", label: "Instalación (mano de obra)", price: 1890 },
+  { id: "align",   label: "Alineación", price: 175 },
+  { id: "trim",    label: 'Trimming + fenders (clearance 40")', price: 1000, onlyTire: "40",
+    note: 'Solo aplica para llantas de 40". Para 37" no aplica.' },
+  { id: "dys",     label: "Asesoría de parámetros (compra para instalar en DYS)", price: 250 },
+];
+
 /* ---------- Acceso al panel administrativo ---------------------------------
    ATENCIÓN — ESTO NO ES SEGURIDAD REAL.
    Esta comprobación ocurre en el navegador, así que estas credenciales viajan
@@ -271,6 +332,10 @@ function StoreProvider({ children }) {
   const [courses, setCourses] = useState(DEFAULT_COURSES);
   const [gallery, setGallery] = useState(DEFAULT_GALLERY);
 
+  // Producto destacado + opciones finales (editables en el Admin)
+  const [product, setProduct] = useState(DEFAULT_PRODUCT);
+  const [finalOpts, setFinalOpts] = useState(FINAL_OPTIONS);
+
   // Marca / imágenes
   const [brand, setBrand] = useState({ logoUrl: "", heroUrl: "" });
 
@@ -306,6 +371,7 @@ function StoreProvider({ children }) {
     leads, setLeads, stages, setStages, brand, setBrand, authed, setAuthed,
     wheels, setWheels, perf, setPerf, armor, setArmor, vehCat, setVehCat,
     events, setEvents, courses, setCourses, gallery, setGallery,
+    product, setProduct, finalOpts, setFinalOpts,
     accentMode, setAccentMode, intensity, setIntensity, theme,
     resetBuild, resetAll,
   };
@@ -483,6 +549,87 @@ function Hero() {
   );
 }
 
+/* ---------------------------------------------------------------------------
+   TIRA DE VEHÍCULOS PRE-ARMADOS (estilo "Shop by vehicle" con tarjetas).
+   Se monta sobre el borde inferior del hero. Cada tarjeta es un build listo:
+   la camioneta sobresale del marco y la etiqueta roja lleva el nombre.
+   Para sumar vehículos, agrega entradas a la lista que recibe `items`.
+   -------------------------------------------------------------------------*/
+function VehicleTile({ item }) {
+  const { theme } = useStore();
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={item.onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+            onFocus={() => setHover(true)} onBlur={() => setHover(false)}
+            className="block text-left shrink-0" aria-label={`Ver build ${item.name} ${item.years}`}
+            style={{ width: "clamp(250px, 30vw, 330px)", position: "relative", paddingTop: "clamp(48px, 5.7vw, 63px)" }}>
+      {/* marco de la tarjeta */}
+      <div style={{
+        position: "relative", aspectRatio: "4 / 2.55", borderRadius: 10, overflow: "hidden",
+        background: "linear-gradient(160deg, #18181c 0%, #0d0d10 70%)",
+        border: `1px solid ${hover ? theme.accent : "#2c2c31"}`,
+        boxShadow: hover ? `0 18px 40px rgba(0,0,0,0.6), 0 0 30px ${theme.accentGlow}` : "0 16px 36px rgba(0,0,0,0.55)",
+        transition: "border-color .3s, box-shadow .4s",
+      }}>
+        <div className="absolute inset-0" style={{ ...carbon, opacity: 0.6 }} />
+        {/* franja diagonal de marca */}
+        <div className="absolute inset-0" style={{ pointerEvents: "none",
+          background: `linear-gradient(118deg, transparent 38%, ${theme.accentSoft} 44%, ${theme.accentSoft} 52%, transparent 58%)`,
+          opacity: hover ? 1 : 0.7, transition: "opacity .3s" }} />
+        <div className="absolute inset-x-0 bottom-0" style={{ height: "45%", pointerEvents: "none",
+          background: `radial-gradient(70% 100% at 50% 100%, ${theme.accentSoft}, transparent 70%)` }} />
+        {/* corchetes HUD */}
+        {[["top", "left"], ["top", "right"], ["bottom", "left"], ["bottom", "right"]].map(([v, h], i) => (
+          <span key={i} aria-hidden="true" className="absolute" style={{
+            [v]: 8, [h]: 8, width: 14, height: 14, pointerEvents: "none",
+            [`border${v === "top" ? "Top" : "Bottom"}`]: `2px solid ${theme.accent}`,
+            [`border${h === "left" ? "Left" : "Right"}`]: `2px solid ${theme.accent}`,
+            opacity: hover ? 1 : 0.45, transition: "opacity .3s" }} />
+        ))}
+        {/* polvo sutil bajo las ruedas al pasar el mouse */}
+        {[{ x: 22, d: 0 }, { x: 55, d: 80 }, { x: 84, d: 150 }].map((p, i) => (
+          <span key={i} aria-hidden="true" style={{
+            position: "absolute", left: `${p.x}%`, top: "90%", width: 64, height: 64, borderRadius: "50%",
+            pointerEvents: "none", transform: "translate(-50%,-50%)", opacity: 0, filter: "blur(5px)",
+            background: "radial-gradient(circle, rgba(170,150,120,0.5), rgba(150,130,100,0) 70%)",
+            animation: hover ? `dp-dust 1s ease-out ${p.d}ms` : "none" }} />
+        ))}
+      </div>
+
+      {/* camioneta que sobresale por arriba del marco */}
+      <img src={item.img} alt="" aria-hidden="true" className="pointer-events-none select-none"
+           style={{ position: "absolute", left: "-12%", width: "124%", maxWidth: "none", top: 0, height: "auto",
+                    filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.6))",
+                    transform: hover ? "translateY(-8px) scale(1.04)" : "none", transformOrigin: "50% 80%",
+                    transition: "transform .5s cubic-bezier(.22,1,.36,1)" }} />
+
+      {/* etiqueta roja inclinada */}
+      <div style={{ position: "absolute", left: "50%", bottom: -14, transform: `translateX(-50%) skewX(-12deg) ${hover ? "translateY(-2px)" : ""}`,
+                    background: theme.accent, padding: "7px 18px", whiteSpace: "nowrap",
+                    boxShadow: `0 8px 22px rgba(0,0,0,0.55), 0 0 18px ${theme.accentGlow}`, transition: "transform .3s" }}>
+        <div style={{ transform: "skewX(12deg)", textAlign: "center" }}>
+          <span className="block font-bold uppercase leading-none" style={{ fontFamily: F_DISPLAY, color: "#0a0a0b", fontSize: 17, letterSpacing: "0.04em" }}>
+            {item.name}
+          </span>
+          <span className="block uppercase mt-1" style={{ fontFamily: F_MONO, color: "#0a0a0b", fontSize: 9.5, letterSpacing: "0.14em", fontWeight: 700 }}>
+            {item.years} · {item.tag}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function VehicleStrip({ items }) {
+  return (
+    <section className="relative z-10 max-w-6xl mx-auto px-6 -mt-4 sm:-mt-20 md:-mt-36 pb-12">
+      <div className="flex flex-wrap justify-center gap-x-6 gap-y-14">
+        {items.map((it) => <VehicleTile key={it.id} item={it} />)}
+      </div>
+    </section>
+  );
+}
+
 function ShopByVehicle({ scrollTarget }) {
   const { vehicle, setVehicle, setSearched, resetBuild, theme, vehCat } = useStore();
   const [local, setLocal] = useState(vehicle);
@@ -514,7 +661,7 @@ function ShopByVehicle({ scrollTarget }) {
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 -mt-8 relative z-10">
+    <section className="max-w-6xl mx-auto px-6 relative z-10">
       <Reveal y={16}>
       <div className="rounded-md p-6 md:p-7" style={{ background: "#141417", border: "1px solid #2a2a2f", boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}>
         <div className="flex items-center gap-2 mb-5">
@@ -761,23 +908,32 @@ function MultiStep({ n, title, sub, items, selected, setSelected }) {
 
 function BuildItYourself() {
   const { vehicle, stages, stageId, wheelId, perfIds, armorIds, notes, setNotes,
-          leads, setLeads, resetBuild, theme, wheels, perf, armor } = useStore();
+          leads, setLeads, resetBuild, theme, wheels, perf, armor, finalOpts } = useStore();
   const [sent, setSent] = useState(false);
+  const [airRide, setAirRide] = useState("");     // "" | "si" | "no"
+  const [extras, setExtras] = useState([]);       // ids de finalOpts
 
   const stage = stages.find((s) => s.id === stageId);
   const wheel = wheels.find((w) => w.id === wheelId);
   const perfs = perf.filter((p) => perfIds.includes(p.id));
   const armors = armor.filter((a) => armorIds.includes(a.id));
+  const chosenExtras = finalOpts.filter((o) => extras.includes(o.id));
+
+  const toggleExtra = (id) =>
+    setExtras((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
 
   const total =
     (stage?.price || 0) + (wheel?.price || 0) +
-    perfs.reduce((s, p) => s + p.price, 0) + armors.reduce((s, a) => s + a.price, 0);
+    perfs.reduce((s, p) => s + p.price, 0) + armors.reduce((s, a) => s + a.price, 0) +
+    chosenExtras.reduce((s, o) => s + o.price, 0);
 
   const lines = [
     stage && { k: `Stage ${stage.id} · ${stage.name}`, v: money(stage.price) },
     wheel && { k: `Rines · ${wheel.name}`, v: money(wheel.price) },
     ...perfs.map((p) => ({ k: `Performance · ${p.name}`, v: money(p.price) })),
     ...armors.map((a) => ({ k: `Armor · ${a.name}`, v: money(a.price) })),
+    ...chosenExtras.map((o) => ({ k: `Extra · ${o.label}`, v: money(o.price) })),
+    airRide && { k: "Air ride de fábrica", v: airRide === "si" ? "Sí" : "No" },
   ].filter(Boolean);
 
   const submit = () => {
@@ -787,13 +943,14 @@ function BuildItYourself() {
       vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? " " + vehicle.trim : ""}`,
       stage: stage ? `Stage ${stage.id} ${stage.name}` : "—",
       wheel: wheel?.name || "—",
-      addons: [...perfs.map((p) => p.name), ...armors.map((a) => a.name)],
+      addons: [...perfs.map((p) => p.name), ...armors.map((a) => a.name), ...chosenExtras.map((o) => o.label)],
+      airRide: airRide ? (airRide === "si" ? "Sí" : "No") : "—",
       notes: notes.trim(),
       total,
     };
     setLeads([lead, ...leads]);
     setSent(true);
-    setTimeout(() => { setSent(false); resetBuild(); }, 3200);
+    setTimeout(() => { setSent(false); resetBuild(); setExtras([]); setAirRide(""); }, 3200);
   };
 
   return (
@@ -802,6 +959,63 @@ function BuildItYourself() {
       <h3 className="text-2xl md:text-3xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>
         Ármalo tú mismo y contacta con el Team de Dynopro
       </h3>
+
+      {/* ---- Opciones de instalación y extras (paso final) ---- */}
+      <div className="mt-6 rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Wrench size={16} color={theme.accent} />
+          <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>
+            Instalación y extras
+          </span>
+        </div>
+
+        {/* Pregunta: air ride de fábrica */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4"
+             style={{ borderBottom: "1px solid #1e1e22" }}>
+          <span className="text-sm text-zinc-300" style={{ fontFamily: F_BODY }}>
+            ¿El vehículo trae <b className="text-white">Air Ride System</b> de fábrica?
+          </span>
+          <div className="flex gap-2">
+            {[["si", "Sí"], ["no", "No"]].map(([v, t]) => {
+              const on = airRide === v;
+              return (
+                <button key={v} onClick={() => setAirRide(on ? "" : v)}
+                        className="px-5 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
+                        style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
+                                 background: on ? theme.accent : "#1c1c20",
+                                 color: on ? "#0a0a0b" : "#c9c9cf",
+                                 border: `1px solid ${on ? theme.accent : "#2c2c31"}` }}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Extras con precio */}
+        <div className="space-y-2">
+          {finalOpts.map((o) => {
+            const on = extras.includes(o.id);
+            return (
+              <button key={o.id} onClick={() => toggleExtra(o.id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-sm text-left transition hover:brightness-110"
+                      style={{ background: on ? theme.accentSoft : "#141417",
+                               border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
+                <span className="flex items-center justify-center rounded-sm shrink-0"
+                      style={{ width: 20, height: 20, background: on ? theme.accent : "transparent",
+                               border: `1px solid ${on ? theme.accent : "#3a3a40"}` }}>
+                  {on && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm text-white" style={{ fontFamily: F_BODY }}>{o.label}</span>
+                  {o.note && <span className="block text-[11px] text-zinc-500 mt-0.5" style={{ fontFamily: F_MONO }}>{o.note}</span>}
+                </span>
+                <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: F_MONO }}>{money(o.price)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Resumen dinámico */}
@@ -867,13 +1081,475 @@ function BuildItYourself() {
   );
 }
 
+/* ---------------------------------------------------------------------------
+   CABECERA ANIMADA DEL BUILD
+   Dos capas alineadas de la misma foto: el fondo (sin la camioneta) y la
+   camioneta recortada. Al abrir: barrido rojo que revela la foto, acercamiento
+   lento, corchetes HUD y marcadores técnicos sobre cada componente.
+   Al mover el mouse, fondo y camioneta se desplazan distinto (profundidad).
+   -------------------------------------------------------------------------*/
+const PRODUCT_PINS = [
+  // x / y en % del marco de la foto; side = hacia dónde sale la etiqueta
+  { x: 44, y: 52, side: "l", label: 'BDS 7" Lift · FOX' },
+  { x: 55, y: 40, side: "l", label: "Brazos superiores BDS" },
+  { x: 89, y: 37, side: "l", label: 'ReadyLIFT 2" trasero' },
+  { x: 55, y: 66, side: "r", label: 'Llantas 37" – 40"' },
+];
+
+function ProductHero({ product, priced, theme, onBack, onStart }) {
+  const frameRef = useRef(null);
+
+  // Profundidad con el mouse: se escribe directo en variables CSS (sin re-render)
+  const onMove = (e) => {
+    const el = frameRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+    el.style.setProperty("--my", (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+  };
+  const onLeave = () => {
+    frameRef.current?.style.setProperty("--mx", "0");
+    frameRef.current?.style.setProperty("--my", "0");
+  };
+
+  const words = product.title.split(" ");
+  // El título va en dos líneas: el nombre del vehículo y luego el año ("2023 – ON")
+  const breakAt = words.findIndex((w) => /\d/.test(w));
+
+  return (
+    <header className="relative overflow-hidden border-b" style={{ ...carbon, borderColor: "#1e1e22" }}>
+      {/* atmósfera: la misma foto, desenfocada y oscura, detrás de todo */}
+      <div className="absolute inset-0 dp-anim" aria-hidden="true"
+           style={{ backgroundImage: `url(${PRODUCT_BG})`, backgroundSize: "cover", backgroundPosition: "center 40%",
+                    filter: "blur(38px) saturate(130%)", transform: "scale(1.25)", opacity: 0.32,
+                    animation: "dp-fade 1.4s ease-out both" }} />
+      <div className="absolute inset-0" aria-hidden="true"
+           style={{ background: "linear-gradient(90deg, rgba(10,10,11,0.94) 0%, rgba(10,10,11,0.72) 45%, rgba(10,10,11,0.55) 100%)" }} />
+      <div className="absolute inset-0" aria-hidden="true"
+           style={{ background: `radial-gradient(50% 60% at 72% 55%, ${theme.accentSoft}, transparent 70%)` }} />
+
+      <div className="relative max-w-6xl mx-auto px-6 pt-6 pb-12 md:pb-16">
+        <button onClick={onBack}
+                className="inline-flex items-center gap-2 text-xs uppercase text-zinc-400 hover:text-white transition mb-6"
+                style={{ fontFamily: F_MONO, letterSpacing: "0.1em" }}>
+          <ArrowLeft size={14} /> Volver al inicio
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-[0.9fr_1.1fr] gap-8 md:gap-10 items-center">
+          {/* ---- texto ---- */}
+          <div className="order-2 md:order-1">
+            <div className="dp-anim" style={{ animation: "dp-rise .7s cubic-bezier(.22,1,.36,1) .2s both" }}>
+              <Eyebrow>Build preconfigurado</Eyebrow>
+            </div>
+            <h1 className="text-white font-bold uppercase leading-[0.92]"
+                style={{ fontFamily: F_DISPLAY, fontSize: "clamp(2.1rem, 4.6vw, 3.5rem)" }}>
+              {words.map((w, i) => (
+                <Fragment key={i}>
+                {i === breakAt && i > 0 && <br />}
+                <span className="inline-block dp-anim"
+                      style={{ marginRight: "0.25em", color: breakAt > 0 && i >= breakAt ? theme.accent : "#fff",
+                               animation: `dp-rise .75s cubic-bezier(.22,1,.36,1) ${0.35 + i * 0.09}s both` }}>
+                  {w}
+                </span>
+                </Fragment>
+              ))}
+            </h1>
+            <div className="dp-anim" style={{ animation: "dp-rise .8s cubic-bezier(.22,1,.36,1) .85s both" }}>
+              <p className="mt-3 text-zinc-300 md:text-lg" style={{ fontFamily: F_BODY }}>{product.subtitle}</p>
+              <span className="inline-flex items-center gap-2 mt-4 text-xs px-3 py-1.5 rounded-sm text-zinc-300"
+                    style={{ border: "1px solid #2a2a2f", background: "rgba(16,16,19,0.8)", fontFamily: F_MONO }}>
+                <Car size={13} color={theme.accent} /> {product.fitment}
+              </span>
+              <div className="mt-5 flex items-baseline gap-3">
+                <span className="text-xs uppercase text-zinc-500" style={{ fontFamily: F_MONO, letterSpacing: "0.12em" }}>Precio del build</span>
+                <span className="text-2xl font-bold" style={{ color: theme.accent, fontFamily: F_MONO }}>{priced(product.basePrice)}</span>
+              </div>
+              <div className="mt-6">
+                <Button onClick={onStart}>Configurar mi build <ChevronRight size={16} /></Button>
+              </div>
+            </div>
+          </div>
+
+          {/* ---- foto con su fondo original ---- */}
+          <div className="order-1 md:order-2">
+            <div ref={frameRef} onPointerMove={onMove} onPointerLeave={onLeave}
+                 className="relative w-full"
+                 style={{ aspectRatio: "1200 / 1041", "--mx": 0, "--my": 0 }}>
+              {/* marco que se revela con el barrido */}
+              <div className="absolute inset-0 overflow-hidden rounded-md dp-anim"
+                   style={{ border: "1px solid #2a2a2f", boxShadow: "0 30px 70px rgba(0,0,0,0.6)",
+                            animation: "dp-wipe 1.05s cubic-bezier(.77,0,.18,1) .15s both" }}>
+                {/* acercamiento lento de cámara */}
+                <div className="absolute inset-0 dp-anim" style={{ animation: "dp-zoom 2.6s cubic-bezier(.22,1,.36,1) .15s both" }}>
+                  <img src={PRODUCT_BG} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full"
+                       style={{ objectFit: "cover", transform: "translate3d(calc(var(--mx) * -3px), calc(var(--my) * -2px), 0) scale(1.03)",
+                                transition: "transform .5s cubic-bezier(.22,1,.36,1)" }} />
+                  <img src={PRODUCT_TRUCK} alt={product.title} className="absolute inset-0 w-full h-full"
+                       style={{ objectFit: "cover", transform: "translate3d(calc(var(--mx) * 3px), calc(var(--my) * 2px), 0) scale(1.03)",
+                                transition: "transform .5s cubic-bezier(.22,1,.36,1)",
+                                filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.35))" }} />
+                </div>
+                {/* viñeta + líneas de escaneo de marca */}
+                <div className="absolute inset-0" aria-hidden="true" style={{ pointerEvents: "none",
+                     background: "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(8,8,10,0.55) 100%)" }} />
+                <div className="absolute inset-0" aria-hidden="true" style={{ pointerEvents: "none", opacity: 0.35,
+                     backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 4px)" }} />
+                {/* destello rojo que cruza la foto una vez al abrir */}
+                <div className="absolute inset-y-0 dp-anim" aria-hidden="true"
+                     style={{ width: "45%", left: 0, pointerEvents: "none", mixBlendMode: "screen",
+                              background: `linear-gradient(100deg, transparent 0%, ${theme.accentGlow} 50%, transparent 100%)`,
+                              animation: "dp-sweep 1.5s cubic-bezier(.45,0,.2,1) 1.05s both" }} />
+              </div>
+
+              {/* borde rojo que acompaña al barrido */}
+              <div className="absolute inset-y-0 dp-anim" aria-hidden="true"
+                   style={{ width: 3, left: 0, background: theme.accent, boxShadow: `0 0 18px ${theme.accentGlow}`, pointerEvents: "none",
+                            animation: "dp-edge 1.05s cubic-bezier(.77,0,.18,1) .15s both" }} />
+
+              {/* corchetes HUD */}
+              {[["top", "left"], ["top", "right"], ["bottom", "left"], ["bottom", "right"]].map(([v, h], i) => (
+                <span key={i} aria-hidden="true" className="absolute dp-anim"
+                      style={{ [v]: -8, [h]: -8, width: 26, height: 26, pointerEvents: "none",
+                               [`border${v === "top" ? "Top" : "Bottom"}`]: `2px solid ${theme.accent}`,
+                               [`border${h === "left" ? "Left" : "Right"}`]: `2px solid ${theme.accent}`,
+                               animation: `dp-pop .5s cubic-bezier(.22,1,.36,1) ${1.0 + i * 0.07}s both` }} />
+              ))}
+
+              {/* marcadores técnicos sobre la camioneta */}
+              {PRODUCT_PINS.map((p, i) => (
+                <div key={i} className="absolute dp-anim" style={{ left: `${p.x}%`, top: `${p.y}%`, pointerEvents: "none",
+                     animation: `dp-fade .5s ease-out ${1.6 + i * 0.18}s both` }}>
+                  <span className="absolute rounded-full" style={{ width: 10, height: 10, left: -5, top: -5,
+                        background: theme.accent, boxShadow: `0 0 0 3px rgba(10,10,11,0.6), 0 0 14px ${theme.accentGlow}` }} />
+                  <span className="absolute rounded-full dp-anim" style={{ width: 10, height: 10, left: -5, top: -5,
+                        border: `2px solid ${theme.accent}`, animation: `dp-ping 2.2s ease-out ${2 + i * 0.3}s infinite` }} />
+                  <div className="absolute hidden sm:flex items-center"
+                       style={{ top: -11, [p.side === "l" ? "right" : "left"]: 6, flexDirection: p.side === "l" ? "row-reverse" : "row" }}>
+                    <span className="dp-anim" style={{ display: "block", width: 34, height: 1, background: theme.accent,
+                          transformOrigin: p.side === "l" ? "right" : "left",
+                          animation: `dp-line .45s ease-out ${1.75 + i * 0.18}s both` }} />
+                    <span className="whitespace-nowrap text-[10px] font-bold uppercase px-2 py-1 rounded-sm"
+                          style={{ fontFamily: F_MONO, letterSpacing: "0.1em", color: "#fff",
+                                   background: "rgba(10,10,11,0.82)", border: `1px solid ${theme.accentLine}`,
+                                   backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
+                      {p.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* ============================================================================
+   PÁGINA DE PRODUCTO — build preconfigurado (se abre desde el callout)
+   Flujo: ver lo que incluye -> elegir 37" o 40" -> instalación y extras -> enviar.
+   ==========================================================================*/
+function ProductView() {
+  const { product, finalOpts, leads, setLeads, setView, theme } = useStore();
+  const [tire, setTire] = useState("");
+  const [airRide, setAirRide] = useState("");
+  const [extras, setExtras] = useState([]);
+  const [contact, setContact] = useState({ name: "", phone: "" });
+  const [notes, setNotes] = useState("");
+  const [sent, setSent] = useState(false);
+  const extrasRef = useRef(null);
+  const tiresRef = useRef(null);
+
+  useEffect(() => { window.scrollTo({ top: 0 }); }, []);
+
+  const tireObj = product.tires.find((t) => t.id === tire);
+  const applies = (o) => !o.onlyTire || o.onlyTire === tire;
+
+  // Si cambia la medida, se quitan los extras que ya no aplican (p.ej. trimming al pasar a 37")
+  useEffect(() => {
+    setExtras((xs) => xs.filter((id) => {
+      const o = finalOpts.find((f) => f.id === id);
+      return o && (!o.onlyTire || o.onlyTire === tire);
+    }));
+  }, [tire, finalOpts]);
+
+  const chosen = finalOpts.filter((o) => extras.includes(o.id) && applies(o));
+  const toggle = (id) => setExtras((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
+  const priced = (n) => (Number(n) > 0 ? money(n) : "A cotizar");
+
+  const lines = [
+    { k: product.title, v: priced(product.basePrice) },
+    tireObj && { k: `Llantas ${tireObj.label}`, v: priced(tireObj.price) },
+    ...chosen.map((o) => ({ k: o.label, v: money(o.price) })),
+    airRide && { k: "Air ride de fábrica", v: airRide === "si" ? "Sí" : "No" },
+  ].filter(Boolean);
+  const total = (Number(product.basePrice) || 0) + (Number(tireObj?.price) || 0) + chosen.reduce((a, o) => a + o.price, 0);
+  const pending = !(product.basePrice > 0) || (tireObj && !(tireObj.price > 0));
+
+  const pickTire = (id) => {
+    setTire(id);
+    setTimeout(() => extrasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 90);
+  };
+
+  const canSend = tire && contact.name.trim() && contact.phone.trim();
+  const submit = () => {
+    setLeads([{
+      id: Date.now(),
+      when: new Date().toLocaleString("es-US", { dateStyle: "short", timeStyle: "short" }),
+      vehicle: product.fitment,
+      stage: product.title,
+      wheel: `Llantas ${tireObj.label}`,
+      addons: chosen.map((o) => o.label),
+      airRide: airRide ? (airRide === "si" ? "Sí" : "No") : "—",
+      notes: [`${contact.name.trim()} · ${contact.phone.trim()}`, notes.trim()].filter(Boolean).join(" — "),
+      total,
+    }, ...leads]);
+    setSent(true);
+  };
+
+  const stepHead = (n, title, sub, done) => (
+    <div className="flex items-start gap-4 mb-6">
+      <div className="flex items-center justify-center shrink-0 rounded-sm font-bold"
+           style={{ width: 44, height: 44, fontFamily: F_DISPLAY, fontSize: 20,
+                    background: done ? theme.accent : "#1a1a1e", color: done ? "#0a0a0b" : theme.accent,
+                    border: `1px solid ${theme.accentLine}` }}>
+        {done ? <Check size={20} strokeWidth={3} /> : n}
+      </div>
+      <div>
+        <h3 className="text-2xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>{title}</h3>
+        {sub && <p className="mt-1.5 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>{sub}</p>}
+      </div>
+    </div>
+  );
+
+  const field = { background: "#101013", color: "#f2f2f4", border: "1px solid #2a2a2f", fontFamily: F_BODY };
+
+  return (
+    <div>
+      {/* ---- Cabecera del producto: foto original animada (entrada + profundidad + callouts técnicos) ---- */}
+      <ProductHero product={product} priced={priced} theme={theme}
+                   onBack={() => setView("client")}
+                   onStart={() => tiresRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+
+      <div className="max-w-6xl mx-auto px-6 pt-14 pb-24 space-y-16">
+        {/* ---- Lo que incluye ---- */}
+        <Reveal>
+          <section>
+            <div className="mb-6">
+              <Eyebrow>Lo que incluye</Eyebrow>
+              <h2 className="text-2xl md:text-3xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>
+                Componentes del build
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400 max-w-2xl" style={{ fontFamily: F_BODY }}>
+                Estas son algunas de las piezas principales que trae. El Team Dynopro las instala y calibra como un solo sistema.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {product.includes.map((it) => (
+                <article key={it.id} className="flex flex-col rounded-md overflow-hidden"
+                         style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                  <div className="bg-white flex items-center justify-center" style={{ aspectRatio: "16 / 10" }}>
+                    {it.img
+                      ? <img src={it.img} alt={it.name} className="w-full h-full p-3" style={{ objectFit: "contain" }} loading="lazy" />
+                      : <ImageIcon size={28} color="#a1a1aa" />}
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <span className="text-[10px] font-bold uppercase" style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.14em" }}>{it.brand}</span>
+                    <h4 className="mt-1 text-lg font-bold text-white uppercase leading-tight" style={{ fontFamily: F_DISPLAY }}>{it.name}</h4>
+                    {it.sku && <span className="text-[11px] text-zinc-500 mt-1" style={{ fontFamily: F_MONO }}>SKU {it.sku}</span>}
+                    <p className="mt-3 text-sm text-zinc-400 leading-relaxed flex-1" style={{ fontFamily: F_BODY }}>{it.desc}</p>
+                    {it.url && (
+                      <a href={it.url} target="_blank" rel="noopener noreferrer"
+                         className="mt-4 inline-flex items-center gap-1.5 text-xs uppercase font-semibold text-zinc-300 hover:text-white transition"
+                         style={{ fontFamily: F_MONO, letterSpacing: "0.08em" }}>
+                        Ficha del fabricante <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* ---- Paso 1: medida de llanta ---- */}
+        <Reveal>
+          <section ref={tiresRef} style={{ scrollMarginTop: 90 }}>
+            {stepHead("1", "Elige tu medida de llanta", "El build está preparado para 37\" o 40\". Escoge cuál vas a correr.", !!tire)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {product.tires.map((t) => {
+                const on = tire === t.id;
+                return (
+                  <button key={t.id} onClick={() => pickTire(t.id)}
+                          className="text-left p-6 rounded-md transition hover:brightness-110"
+                          style={{ background: "#141417", border: `1px solid ${on ? theme.accent : "#2a2a2f"}`,
+                                   boxShadow: on ? `0 0 26px ${theme.accentGlow}` : "none" }}>
+                    <div className="flex items-start justify-between">
+                      <span className="font-bold text-white leading-none" style={{ fontFamily: F_DISPLAY, fontSize: "3.4rem" }}>{t.label}</span>
+                      {on && <CheckCircle2 size={22} color={theme.accent} />}
+                    </div>
+                    <span className="block mt-1 text-xs uppercase text-zinc-500" style={{ fontFamily: F_MONO, letterSpacing: "0.12em" }}>Llantas</span>
+                    <p className="mt-3 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>{t.note}</p>
+                    <span className="block mt-4 text-base font-bold text-white" style={{ fontFamily: F_MONO }}>{priced(t.price)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* ---- Paso 2: instalación y extras (se desbloquea al elegir llanta) ---- */}
+        <section ref={extrasRef} style={{ scrollMarginTop: 90 }}>
+          {stepHead("2", "Instalación y extras", "Último paso: dinos cómo viene tu truck y qué servicios quieres sumar.", false)}
+          {!tire ? (
+            <div className="rounded-md p-8 text-center" style={{ background: "#101013", border: "1px dashed #2a2a2f" }}>
+              <Lock size={20} color={theme.accent} className="mx-auto" />
+              <p className="mt-2 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>Elige primero la medida de llanta.</p>
+            </div>
+          ) : (
+            <div className="rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4" style={{ borderBottom: "1px solid #1e1e22" }}>
+                <span className="text-sm text-zinc-300" style={{ fontFamily: F_BODY }}>
+                  ¿Tu Tundra trae <b className="text-white">Air Ride System</b> de fábrica?
+                </span>
+                <div className="flex gap-2">
+                  {[["si", "Sí"], ["no", "No"]].map(([v, t]) => {
+                    const on = airRide === v;
+                    return (
+                      <button key={v} onClick={() => setAirRide(on ? "" : v)}
+                              className="px-5 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
+                              style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
+                                       background: on ? theme.accent : "#1c1c20", color: on ? "#0a0a0b" : "#c9c9cf",
+                                       border: `1px solid ${on ? theme.accent : "#2c2c31"}` }}>{t}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              {airRide === "si" && (
+                <div className="flex gap-3 p-3 mb-4 rounded-sm" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)" }}>
+                  <AlertTriangle size={16} color="#eab308" className="shrink-0 mt-0.5" />
+                  <p className="text-xs text-zinc-300" style={{ fontFamily: F_BODY }}>
+                    El kit BDS 7" no es compatible con Air Ride de fábrica. Envía tu solicitud igual: el Team te contacta para revisar la mejor opción para tu truck.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {finalOpts.map((o) => {
+                  const ok = applies(o);
+                  const on = ok && extras.includes(o.id);
+                  return (
+                    <button key={o.id} onClick={() => ok && toggle(o.id)} disabled={!ok}
+                            className="w-full flex items-center gap-3 p-3 rounded-sm text-left transition hover:brightness-110 disabled:cursor-not-allowed"
+                            style={{ background: on ? theme.accentSoft : "#141417", opacity: ok ? 1 : 0.45,
+                                     border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
+                      <span className="flex items-center justify-center rounded-sm shrink-0"
+                            style={{ width: 20, height: 20, background: on ? theme.accent : "transparent",
+                                     border: `1px solid ${on ? theme.accent : "#3a3a40"}` }}>
+                        {on && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm text-white" style={{ fontFamily: F_BODY }}>{o.label}</span>
+                        <span className="block text-[11px] text-zinc-500 mt-0.5" style={{ fontFamily: F_MONO }}>
+                          {ok ? o.note : `No aplica con llantas de ${tireObj.label}.`}
+                        </span>
+                      </span>
+                      <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: F_MONO }}>{money(o.price)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ---- Paso 3: resumen y envío ---- */}
+        {tire && (
+          <Reveal>
+            <section style={carbon} className="rounded-md p-6 md:p-8">
+              <Eyebrow>Resumen</Eyebrow>
+              <h3 className="text-2xl md:text-3xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>
+                Pide tu build al Team Dynopro
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div className="rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+                  {lines.map((l, i) => (
+                    <div key={i} className="flex justify-between gap-4 py-2 text-sm" style={{ borderTop: i ? "1px solid #1e1e22" : "none" }}>
+                      <span className="text-zinc-300" style={{ fontFamily: F_BODY }}>{l.k}</span>
+                      <span className="text-white font-semibold shrink-0" style={{ fontFamily: F_MONO }}>{l.v}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-3 mt-1" style={{ borderTop: `1px solid ${theme.accentLine}` }}>
+                    <span className="text-sm uppercase font-bold text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em" }}>Total estimado</span>
+                    <span className="text-lg font-bold" style={{ color: theme.accent, fontFamily: F_MONO }}>{money(total)}</span>
+                  </div>
+                  {pending && (
+                    <p className="mt-2 text-[11px] text-zinc-500" style={{ fontFamily: F_MONO }}>
+                      › Lo marcado "A cotizar" no está sumado. El Team te confirma el precio final.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {sent ? (
+                    <div className="flex items-center gap-3 p-4 rounded-md" style={{ background: theme.accentSoft, border: `1px solid ${theme.accent}` }}>
+                      <CheckCircle2 size={22} color={theme.accent} />
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY }}>¡Solicitud enviada!</p>
+                        <p className="text-xs text-zinc-400" style={{ fontFamily: F_BODY }}>El Team Dynopro te contacta para confirmar tu build.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="block">
+                          <span className="flex items-center gap-1.5 text-xs uppercase text-zinc-500 mb-1.5 font-semibold" style={{ letterSpacing: "0.12em", fontFamily: F_MONO }}><User size={12} /> Nombre</span>
+                          <input type="text" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })}
+                                 className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+                        </label>
+                        <label className="block">
+                          <span className="flex items-center gap-1.5 text-xs uppercase text-zinc-500 mb-1.5 font-semibold" style={{ letterSpacing: "0.12em", fontFamily: F_MONO }}><Phone size={12} /> Teléfono / WhatsApp</span>
+                          <input type="text" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                                 className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+                        </label>
+                      </div>
+                      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
+                                placeholder="Notas para el Team (opcional): trim de tu Tundra, fecha deseada, dudas…"
+                                className="w-full p-3 text-sm outline-none rounded-sm resize-none" style={field} />
+                      <Button onClick={submit} disabled={!canSend} full>
+                        <Send size={16} /> Enviar al Team Dynopro
+                      </Button>
+                      {!canSend && (
+                        <p className="text-[11px] text-zinc-500" style={{ fontFamily: F_MONO }}>› Escribe tu nombre y un teléfono para que te contactemos.</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+          </Reveal>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ClientView() {
   const { searched, resetAll, theme, stageId, wheelId, perfIds, armorIds,
-          setPerfIds, setArmorIds, perf, armor } = useStore();
+          setPerfIds, setArmorIds, perf, armor,
+          setVehicle, setSearched, resetBuild, setView } = useStore();
   const configRef = useRef(null);
+
+  // Builds pre-armados que aparecen en la tira bajo el hero (sumar aquí los próximos vehículos)
+  const prebuilt = [
+    { id: "tundra-23", name: "Toyota Tundra", years: "2023 – ON", tag: '37" – 40"',
+      img: TUNDRA_CUTOUT, onOpen: () => setView("product") },
+  ];
+
   return (
     <div>
       <Hero />
+      <VehicleStrip items={prebuilt} />
       <ShopByVehicle scrollTarget={configRef} />
 
       {!searched ? (
@@ -1300,7 +1976,7 @@ function LeadsConsole() {
           <table className="w-full text-left" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${theme.accentLine}` }}>
-                {["Fecha", "Vehículo", "Stage", "Rines", "Add-ons", "Notas", "Estimado", ""].map((h) => (
+                {["Fecha", "Vehículo", "Build / Stage", "Rines / Llantas", "Add-ons", "Air ride", "Notas", "Estimado", ""].map((h) => (
                   <th key={h} className="px-3 py-2 text-[10px] uppercase text-zinc-500 font-semibold" style={{ fontFamily: F_MONO, letterSpacing: "0.1em" }}>{h}</th>
                 ))}
               </tr>
@@ -1313,6 +1989,7 @@ function LeadsConsole() {
                   <td className="px-3 py-3 text-xs text-zinc-300 whitespace-nowrap" style={{ fontFamily: F_BODY }}>{l.stage}</td>
                   <td className="px-3 py-3 text-xs text-zinc-300 whitespace-nowrap" style={{ fontFamily: F_BODY }}>{l.wheel}</td>
                   <td className="px-3 py-3 text-xs text-zinc-400 max-w-[180px]" style={{ fontFamily: F_BODY }}>{l.addons.length ? l.addons.join(", ") : "—"}</td>
+                  <td className="px-3 py-3 text-xs text-zinc-300 whitespace-nowrap" style={{ fontFamily: F_BODY }}>{l.airRide || "—"}</td>
                   <td className="px-3 py-3 text-xs text-zinc-400 max-w-[200px]" style={{ fontFamily: F_BODY }}>{l.notes || "—"}</td>
                   <td className="px-3 py-3 text-xs font-bold whitespace-nowrap" style={{ color: theme.accent, fontFamily: F_MONO }}>{money(l.total)}</td>
                   <td className="px-3 py-3">
@@ -1567,6 +2244,71 @@ function GalleryView() {
   );
 }
 
+function ProductManager() {
+  const { product, setProduct, finalOpts, setFinalOpts } = useStore();
+  const set = (k, v) => setProduct({ ...product, [k]: v });
+  const patchTire = (id, k, v) => set("tires", product.tires.map((t) => (t.id === id ? { ...t, [k]: v } : t)));
+  const inp = "w-full px-3 py-2 text-sm outline-none rounded-sm";
+  return (
+    <>
+      <AdminPanel title="Producto destacado · Build preconfigurado" icon={Flame}>
+        <div className="space-y-4">
+          <p className="text-xs text-zinc-500" style={{ fontFamily: F_MONO }}>› Precio en 0 = se muestra "A cotizar" y no suma al total.</p>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div className="md:col-span-6"><AdminField label="Título">
+              <input value={product.title} onChange={(e) => set("title", e.target.value)} className={inp} style={inputStyle} /></AdminField></div>
+            <div className="md:col-span-3"><AdminField label="Precio del build ($)">
+              <input type="number" value={product.basePrice} onChange={(e) => set("basePrice", Number(e.target.value))} className={inp} style={inputStyle} /></AdminField></div>
+            <div className="md:col-span-3"><AdminField label="Aplicación">
+              <input value={product.fitment} onChange={(e) => set("fitment", e.target.value)} className={inp} style={inputStyle} /></AdminField></div>
+            <div className="md:col-span-12"><AdminField label="Subtítulo">
+              <input value={product.subtitle} onChange={(e) => set("subtitle", e.target.value)} className={inp} style={inputStyle} /></AdminField></div>
+          </div>
+          {product.tires.map((t) => (
+            <div key={t.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 rounded-md p-3" style={{ background: "#101013", border: "1px solid #22222a" }}>
+              <div className="md:col-span-2 flex items-end pb-2">
+                <span className="text-lg font-bold text-white" style={{ fontFamily: F_DISPLAY }}>Llantas {t.label}</span>
+              </div>
+              <div className="md:col-span-3"><AdminField label="Precio ($)">
+                <input type="number" value={t.price} onChange={(e) => patchTire(t.id, "price", Number(e.target.value))} className={inp} style={inputStyle} /></AdminField></div>
+              <div className="md:col-span-7"><AdminField label="Nota">
+                <input value={t.note} onChange={(e) => patchTire(t.id, "note", e.target.value)} className={inp} style={inputStyle} /></AdminField></div>
+            </div>
+          ))}
+        </div>
+      </AdminPanel>
+
+      <CatalogEditor
+        title="Componente incluido" icon={Wrench}
+        items={product.includes} setItems={(v) => set("includes", v)}
+        makeNew={() => ({ id: "inc" + Date.now(), brand: "", name: "Nuevo componente", sku: "", desc: "", img: "", url: "" })}
+        fields={[
+          { k: "img",   label: "Foto (URL)", type: "image", span: "md:col-span-12" },
+          { k: "brand", label: "Marca",  type: "text", span: "md:col-span-3" },
+          { k: "name",  label: "Nombre", type: "text", span: "md:col-span-6" },
+          { k: "sku",   label: "SKU",    type: "text", span: "md:col-span-3" },
+          { k: "url",   label: "Enlace del fabricante", type: "text", span: "md:col-span-12" },
+          { k: "desc",  label: "Descripción", type: "textarea", span: "md:col-span-12" },
+        ]}
+      />
+
+      <CatalogEditor
+        title="Opción final (instalación y extras)" icon={Settings}
+        items={finalOpts} setItems={setFinalOpts}
+        note='"Aplica a" limita la opción a una medida de llanta (p.ej. trimming solo para 40").'
+        makeNew={() => ({ id: "opt" + Date.now(), label: "Nueva opción", price: 0, onlyTire: "", note: "" })}
+        fields={[
+          { k: "label",    label: "Nombre",     type: "text",   span: "md:col-span-6" },
+          { k: "price",    label: "Precio ($)", type: "number", span: "md:col-span-3" },
+          { k: "onlyTire", label: "Aplica a",   type: "select", span: "md:col-span-3",
+            options: [{ v: "", t: "Todas" }, { v: "37", t: 'Solo 37"' }, { v: "40", t: 'Solo 40"' }] },
+          { k: "note",     label: "Nota",       type: "text",   span: "md:col-span-12" },
+        ]}
+      />
+    </>
+  );
+}
+
 function AdminLogin() {
   const { setAuthed, theme, brand } = useStore();
   const [user, setUser] = useState("");
@@ -1676,6 +2418,7 @@ function AdminView() {
         </Button>
       </div>
       <StyleControls />
+      <ProductManager />
       <VehiclesManager />
       <StagesManager />
       <WheelsManager />
@@ -1869,6 +2612,32 @@ function Shell() {
     document.head.appendChild(link);
   }, []);
 
+  // Keyframes de animaciones (callout y cabecera del build). Se reescribe siempre.
+  useEffect(() => {
+    const id = "dp-keyframes";
+    let st = document.getElementById(id);
+    if (!st) { st = document.createElement("style"); st.id = id; document.head.appendChild(st); }
+    st.textContent = `
+      @keyframes dp-dust {
+        0%   { opacity: 0;    transform: translate(-50%,-50%) scale(0.4); }
+        30%  { opacity: 0.7;  transform: translate(-50%,-70%) scale(1); }
+        100% { opacity: 0;    transform: translate(-50%,-130%) scale(1.8); }
+      }
+      @keyframes dp-fade  { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes dp-rise  { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+      @keyframes dp-wipe  { from { clip-path: inset(0 100% 0 0 round 6px); } to { clip-path: inset(0 0 0 0 round 6px); } }
+      @keyframes dp-edge  { 0% { left: 0; opacity: 1; } 88% { left: 100%; opacity: 1; } 100% { left: 100%; opacity: 0; } }
+      @keyframes dp-zoom  { from { transform: scale(1.16); } to { transform: scale(1); } }
+      @keyframes dp-sweep { from { transform: translateX(-120%); opacity: 1; } to { transform: translateX(260%); opacity: 0.6; } }
+      @keyframes dp-pop   { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+      @keyframes dp-ping  { 0% { opacity: 0.85; transform: scale(1); } 100% { opacity: 0; transform: scale(3.2); } }
+      @keyframes dp-line  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      @media (prefers-reduced-motion: reduce) {
+        .dp-anim, [style*="dp-dust"] { animation: none !important; }
+      }
+    `;
+  }, []);
+
   /* Cursores. Se reescribe SIEMPRE el contenido del <style> (sin early-return):
      si el tag ya existía de un render anterior, las reglas nuevas nunca se
      aplicaban y la tuerca no aparecía. Ese era el bug.
@@ -1926,6 +2695,7 @@ function Shell() {
         : view === "events" ? <EventsView />
         : view === "courses" ? <CoursesView />
         : view === "gallery" ? <GalleryView />
+        : view === "product" ? <ProductView />
         : <ClientView />}
       <CursorGlow />
     </div>
