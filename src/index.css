@@ -8,8 +8,13 @@ body,
   height: 100%;
 }
 
+/* Blanco por defecto; negro si el dispositivo está en modo oscuro.
+   La app pinta su propio fondo encima según el modo elegido. */
 body {
   margin: 0;
-  background: #0a0a0b;
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) {
+  body { background: #0a0a0b; }
 }

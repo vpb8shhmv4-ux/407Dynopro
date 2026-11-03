@@ -6,12 +6,13 @@ import kitBdsUca from "./assets/kit-bds-uca.webp";
 import kitRlSpacer from "./assets/kit-readylift-spacer.webp";
 import productBg from "./assets/product-bg.webp";
 import productTruck from "./assets/product-truck.webp";
+import { createPortal } from "react-dom";
 import {
   Search, Gauge, Zap, Shield, Send, Check, CheckCircle2,
   Settings, LayoutGrid, ChevronRight, Lock, Trash2, SlidersHorizontal,
   Image as ImageIcon, RotateCcw, Cog, CircleDot, Flame, Car, Plus, LogOut, Eye, EyeOff,
   Calendar, GraduationCap, ImagePlus, ChevronDown, Menu, MapPin, Clock, Wrench,
-  ArrowLeft, ExternalLink, AlertTriangle, Phone, User,
+  ArrowLeft, ExternalLink, AlertTriangle, Phone, User, Sun, Moon,
 } from "lucide-react";
 
 /* ============================================================================
@@ -186,22 +187,22 @@ const ICON_KEYS = Object.keys(ICONS);
 
 const DEFAULT_STAGES = [
   {
-    id: 1, name: "Street Sport", price: 1890, lift: '1.5"',
+    id: 1, name: "Dynopro Sport Package", price: 1890, lift: '1.5"',
     desc: "Nivelación y control diario. El punto de entrada al mundo Dynopro.",
     kit: ["Coilovers IMS ajustables (frontal)", "Espirales de carga media (trasero)", "Bujes de poliuretano", "Alineación de precisión"],
   },
   {
-    id: 2, name: "Trail Ready", price: 3450, lift: '2.5"',
+    id: 2, name: "Dynopro Sport Package", price: 3450, lift: '2.5"',
     desc: "Listo para el trail. Amortiguación monotubo y geometría corregida.",
     kit: ["Amortiguadores monotubo con reservorio", "Brazos de control superiores (UCA)", "Espirales heavy-duty", "Extensores de línea de freno", "Alineación de precisión"],
   },
   {
-    id: 3, name: "Overland Pro", price: 5980, lift: '3.5"',
+    id: 3, name: "Dynopro Sport Package", price: 5980, lift: '3.5"',
     desc: "Carga, viaje largo y terreno mixto sin fatiga térmica.",
     kit: ["Amortiguadores con reservorio remoto", "Resortes de carga pesada", "UCA forjados", "Topes hidráulicos", "Kit de reubicación de diferencial", "Alineación de precisión"],
   },
   {
-    id: 4, name: "Baja Race", price: 9750, lift: '4.0"+',
+    id: 4, name: "Dynopro Sport Package", price: 9750, lift: '4.0"+',
     desc: "Competencia pura. Bypass, largo recorrido y disipación extrema.",
     kit: ['Amortiguadores bypass 2.5"', "Hydraulic bump stops", "Long travel / largo recorrido", "Resortes afinados en dyno", "Skid plate de motor", "Alineación + corner balance"],
   },
@@ -255,7 +256,7 @@ const DEFAULT_GALLERY = [
   {
     id: "g1",
     imageUrl: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=70",
-    make: "Toyota", model: "Tundra", optionalText: "Stage 3 · Overland Pro",
+    make: "Toyota", model: "Tundra", optionalText: "Dynopro Sport Package · Stage 3",
   },
   {
     id: "g2",
@@ -288,10 +289,10 @@ const ADMIN_PASS = "407Dnpr.humberto26";
 const money = (n) => "$" + Number(n || 0).toLocaleString("en-US");
 
 const carbon = {
-  backgroundColor: "#0b0b0d",
+  backgroundColor: "var(--carbon)",
   backgroundImage:
-    "repeating-linear-gradient(45deg, rgba(255,255,255,0.022) 0 1px, transparent 1px 3px)," +
-    "repeating-linear-gradient(-45deg, rgba(255,255,255,0.022) 0 1px, transparent 1px 3px)",
+    "repeating-linear-gradient(45deg, var(--carbon-line) 0 1px, transparent 1px 3px)," +
+    "repeating-linear-gradient(-45deg, var(--carbon-line) 0 1px, transparent 1px 3px)",
   backgroundSize: "4px 4px",
 };
 
@@ -340,6 +341,27 @@ function StoreProvider({ children }) {
   const [brand, setBrand] = useState({ logoUrl: "", heroUrl: "" });
 
   // Tema / acento
+  // Modo de color: blanco por defecto; oscuro si el dispositivo lo pide o si el
+  // visitante lo elige con el botón sol/luna (se recuerda en este navegador).
+  const [modePref, setModePref] = useState(() => {
+    try { return localStorage.getItem("dp-mode") || "auto"; } catch { return "auto"; }
+  });
+  const [systemDark, setSystemDark] = useState(() =>
+    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const on = (e) => setSystemDark(e.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  const mode = modePref === "auto" ? (systemDark ? "dark" : "light") : modePref;
+  const toggleMode = () => {
+    const next = mode === "dark" ? "light" : "dark";
+    setModePref(next);
+    try { localStorage.setItem("dp-mode", next); } catch { /* sin almacenamiento: solo esta sesión */ }
+  };
+
   const [accentMode, setAccentMode] = useState("red"); // 'red' | 'gray' | 'black'
   const [intensity, setIntensity] = useState(48); // luminosidad del rojo
 
@@ -372,7 +394,7 @@ function StoreProvider({ children }) {
     wheels, setWheels, perf, setPerf, armor, setArmor, vehCat, setVehCat,
     events, setEvents, courses, setCourses, gallery, setGallery,
     product, setProduct, finalOpts, setFinalOpts,
-    accentMode, setAccentMode, intensity, setIntensity, theme,
+    accentMode, setAccentMode, intensity, setIntensity, theme, mode, toggleMode,
     resetBuild, resetAll,
   };
   return <Store.Provider value={value}>{children}</Store.Provider>;
@@ -389,8 +411,8 @@ function Button({ children, onClick, variant = "accent", disabled, full, classNa
     variant === "accent"
       ? { background: theme.accent, color: "#0a0a0b", boxShadow: `0 0 22px ${theme.accentGlow}`, letterSpacing: "0.08em", fontFamily: F_DISPLAY }
       : variant === "outline"
-      ? { background: "transparent", color: "#e7e7ea", border: `1px solid ${theme.accentLine}`, letterSpacing: "0.08em", fontFamily: F_DISPLAY }
-      : { background: "#1c1c20", color: "#c9c9cf", border: "1px solid #2c2c31", letterSpacing: "0.08em", fontFamily: F_DISPLAY };
+      ? { background: "transparent", color: "var(--fg)", border: `1px solid ${theme.accentLine}`, letterSpacing: "0.08em", fontFamily: F_DISPLAY }
+      : { background: "var(--surface-3)", color: "var(--fg-2)", border: "1px solid var(--line)", letterSpacing: "0.08em", fontFamily: F_DISPLAY };
   return (
     <button
       type={type}
@@ -439,11 +461,11 @@ function Select({ label, value, onChange, options, placeholder, disabled }) {
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-3 text-sm outline-none rounded-sm disabled:opacity-40 cursor-pointer"
-        style={{ background: "#141417", color: value ? "#f2f2f4" : "#71717a", border: "1px solid #2c2c31", fontFamily: F_BODY }}
+        style={{ background: "var(--surface)", color: value ? "var(--fg)" : "var(--fg-4)", border: "1px solid var(--line)", fontFamily: F_BODY }}
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
-          <option key={o} value={o} style={{ background: "#141417" }}>{o}</option>
+          <option key={o} value={o} style={{ background: "var(--surface)" }}>{o}</option>
         ))}
       </select>
     </label>
@@ -485,23 +507,23 @@ function Reveal({ children, delay = 0, y = 22, className = "" }) {
 /* Nodo LED del riel de progreso (señal visual "fase activa") */
 function Led({ on, label, icon: Icon, current }) {
   const { theme } = useStore();
-  const color = on || current ? theme.accent : "#3a3a40";
+  const color = on || current ? theme.accent : "var(--line-strong)";
   return (
     <div className="flex flex-col items-center gap-2 min-w-[64px]">
       <div
         className="flex items-center justify-center rounded-full transition"
         style={{
           width: 40, height: 40,
-          background: on ? theme.accent : "#141417",
+          background: on ? theme.accent : "var(--surface)",
           border: `2px solid ${color}`,
           boxShadow: on || current ? `0 0 16px ${theme.accentGlow}` : "none",
         }}
       >
-        {on ? <Check size={18} color="#0a0a0b" strokeWidth={3} /> : <Icon size={17} color={color} />}
+        {on ? <Check size={18} color="#0a0a0b" strokeWidth={3} /> : <Icon size={17} color="currentColor" style={{ color }} />}
       </div>
       <span
         className="text-[10px] uppercase font-semibold text-center"
-        style={{ color: on || current ? "#e7e7ea" : "#5a5a62", letterSpacing: "0.1em", fontFamily: F_MONO }}
+        style={{ color: on || current ? "var(--fg)" : "var(--fg-4)", letterSpacing: "0.1em", fontFamily: F_MONO }}
       >
         {label}
       </span>
@@ -516,7 +538,7 @@ function Hero() {
   const { brand, theme } = useStore();
   const src = brand.heroUrl || HERO_PHOTO;
   return (
-    <header style={carbon} className="relative overflow-hidden border-b">
+    <header style={carbon} className="dp-dark relative overflow-hidden border-b">
       <div style={{ position: "relative", width: "100%", aspectRatio: `${HERO_AR}` }}>
         <img src={src} alt="407Dynopro · Toyota Tundra TRD"
              className="absolute inset-0 w-full h-full" style={{ objectFit: "cover" }} />
@@ -534,12 +556,12 @@ function Hero() {
           <h1 className="font-bold text-white uppercase"
               style={{ fontFamily: F_DISPLAY, lineHeight: 0.88,
                        fontSize: "clamp(2rem, 6.4vw, 5rem)",
-                       textShadow: "0 4px 34px rgba(0,0,0,0.95), 0 1px 3px rgba(0,0,0,0.9)" }}>
+                       textShadow: "0 4px 34px rgb(0 0 0 / calc(0.95 * var(--sh-k))), 0 1px 3px rgb(0 0 0 / calc(0.9 * var(--sh-k)))" }}>
             Especialistas en<br />
             <span style={{ color: theme.accent, textShadow: `0 0 46px ${theme.accentGlow}` }}>suspensión.</span>
           </h1>
           <p className="mt-4 max-w-md text-zinc-300 text-sm md:text-base"
-             style={{ fontFamily: F_BODY, textShadow: "0 2px 14px rgba(0,0,0,0.95)" }}>
+             style={{ fontFamily: F_BODY, textShadow: "0 2px 14px rgb(0 0 0 / calc(0.95 * var(--sh-k)))" }}>
             Selecciona tu vehículo y arma tu build por etapas: suspensión, rines,
             performance y armor. Cada componente, validado por el Team Dynopro.
           </p>
@@ -550,82 +572,294 @@ function Hero() {
 }
 
 /* ---------------------------------------------------------------------------
-   TIRA DE VEHÍCULOS PRE-ARMADOS (estilo "Shop by vehicle" con tarjetas).
-   Se monta sobre el borde inferior del hero. Cada tarjeta es un build listo:
-   la camioneta sobresale del marco y la etiqueta roja lleva el nombre.
-   Para sumar vehículos, agrega entradas a la lista que recibe `items`.
+   TIRA DE VEHÍCULOS PRE-ARMADOS
+   Tarjetas en fila; la que está bajo el cursor (o al centro, en celular) crece.
+   Con mouse, la tira se desliza hacia el lado donde está el cursor; en táctil
+   se desliza con el dedo y encaja la tarjeta al centro.
+   Los vehículos sin página aún muestran silueta + "Próximamente" y piden contacto.
    -------------------------------------------------------------------------*/
-function VehicleTile({ item }) {
+
+function VehicleTile({ item, big, width }) {
   const { theme } = useStore();
-  const [hover, setHover] = useState(false);
   return (
-    <button onClick={item.onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-            onFocus={() => setHover(true)} onBlur={() => setHover(false)}
-            className="block text-left shrink-0" aria-label={`Ver build ${item.name} ${item.years}`}
-            style={{ width: "clamp(250px, 30vw, 330px)", position: "relative", paddingTop: "clamp(48px, 5.7vw, 63px)" }}>
-      {/* marco de la tarjeta */}
+    <div className="dp-strip-item" style={{ width, aspectRatio: "1 / 0.8275", position: "relative" }}>
+      {/* marco de la tarjeta (ocupa el 77% inferior; arriba queda aire para que el vehículo sobresalga) */}
       <div style={{
-        position: "relative", aspectRatio: "4 / 2.55", borderRadius: 10, overflow: "hidden",
-        background: "linear-gradient(160deg, #18181c 0%, #0d0d10 70%)",
-        border: `1px solid ${hover ? theme.accent : "#2c2c31"}`,
-        boxShadow: hover ? `0 18px 40px rgba(0,0,0,0.6), 0 0 30px ${theme.accentGlow}` : "0 16px 36px rgba(0,0,0,0.55)",
-        transition: "border-color .3s, box-shadow .4s",
+        position: "absolute", left: 0, right: 0, top: "22.96%", bottom: 0, borderRadius: 8, overflow: "hidden",
+        background: "linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 70%)",
+        border: `1px solid ${big ? theme.accent : "var(--line)"}`,
+        boxShadow: big ? `0 14px 30px rgb(0 0 0 / calc(0.55 * var(--sh-k))), 0 0 22px ${theme.accentGlow}` : "0 10px 22px rgb(0 0 0 / calc(0.4 * var(--sh-k)))",
+        transition: "border-color .4s, box-shadow .5s",
       }}>
         <div className="absolute inset-0" style={{ ...carbon, opacity: 0.6 }} />
-        {/* franja diagonal de marca */}
         <div className="absolute inset-0" style={{ pointerEvents: "none",
           background: `linear-gradient(118deg, transparent 38%, ${theme.accentSoft} 44%, ${theme.accentSoft} 52%, transparent 58%)`,
-          opacity: hover ? 1 : 0.7, transition: "opacity .3s" }} />
-        <div className="absolute inset-x-0 bottom-0" style={{ height: "45%", pointerEvents: "none",
-          background: `radial-gradient(70% 100% at 50% 100%, ${theme.accentSoft}, transparent 70%)` }} />
-        {/* corchetes HUD */}
+          opacity: big ? 1 : 0.55, transition: "opacity .4s" }} />
         {[["top", "left"], ["top", "right"], ["bottom", "left"], ["bottom", "right"]].map(([v, h], i) => (
           <span key={i} aria-hidden="true" className="absolute" style={{
-            [v]: 8, [h]: 8, width: 14, height: 14, pointerEvents: "none",
-            [`border${v === "top" ? "Top" : "Bottom"}`]: `2px solid ${theme.accent}`,
-            [`border${h === "left" ? "Left" : "Right"}`]: `2px solid ${theme.accent}`,
-            opacity: hover ? 1 : 0.45, transition: "opacity .3s" }} />
+            [v]: 6, [h]: 6, width: 10, height: 10, pointerEvents: "none",
+            [`border${v === "top" ? "Top" : "Bottom"}`]: `1.5px solid ${theme.accent}`,
+            [`border${h === "left" ? "Left" : "Right"}`]: `1.5px solid ${theme.accent}`,
+            opacity: big ? 1 : 0.35, transition: "opacity .4s" }} />
         ))}
-        {/* polvo sutil bajo las ruedas al pasar el mouse */}
-        {[{ x: 22, d: 0 }, { x: 55, d: 80 }, { x: 84, d: 150 }].map((p, i) => (
+        {item.soon && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: "14%" }}>
+            <span className="font-bold uppercase" style={{ fontFamily: F_DISPLAY, color: "var(--fg-3)", fontSize: Math.max(11, Math.round(width * 0.075)), letterSpacing: "0.1em" }}>
+              Próximamente
+            </span>
+            <span style={{ width: 30, height: 2, marginTop: 6, background: theme.accent }} />
+          </div>
+        )}
+        {!item.soon && big && [{ x: 22, d: 0 }, { x: 55, d: 80 }, { x: 84, d: 150 }].map((p, i) => (
           <span key={i} aria-hidden="true" style={{
-            position: "absolute", left: `${p.x}%`, top: "90%", width: 64, height: 64, borderRadius: "50%",
-            pointerEvents: "none", transform: "translate(-50%,-50%)", opacity: 0, filter: "blur(5px)",
+            position: "absolute", left: `${p.x}%`, top: "90%", width: 44, height: 44, borderRadius: "50%",
+            pointerEvents: "none", transform: "translate(-50%,-50%)", opacity: 0, filter: "blur(4px)",
             background: "radial-gradient(circle, rgba(170,150,120,0.5), rgba(150,130,100,0) 70%)",
-            animation: hover ? `dp-dust 1s ease-out ${p.d}ms` : "none" }} />
+            animation: `dp-dust 1.1s ease-out ${p.d + 250}ms` }} />
         ))}
       </div>
 
-      {/* camioneta que sobresale por arriba del marco */}
-      <img src={item.img} alt="" aria-hidden="true" className="pointer-events-none select-none"
-           style={{ position: "absolute", left: "-12%", width: "124%", maxWidth: "none", top: 0, height: "auto",
-                    filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.6))",
-                    transform: hover ? "translateY(-8px) scale(1.04)" : "none", transformOrigin: "50% 80%",
-                    transition: "transform .5s cubic-bezier(.22,1,.36,1)" }} />
+      {/* vehículo: foto recortada que sobresale del marco */}
+      {item.img && (
+        <img src={item.img} alt="" aria-hidden="true" draggable="false" className="pointer-events-none select-none"
+             style={{ position: "absolute", left: "-12%", width: "124%", maxWidth: "none", top: 0, height: "auto",
+                      filter: "drop-shadow(0 10px 12px rgb(0 0 0 / calc(0.55 * var(--sh-k))))" }} />
+      )}
 
-      {/* etiqueta roja inclinada */}
-      <div style={{ position: "absolute", left: "50%", bottom: -14, transform: `translateX(-50%) skewX(-12deg) ${hover ? "translateY(-2px)" : ""}`,
-                    background: theme.accent, padding: "7px 18px", whiteSpace: "nowrap",
-                    boxShadow: `0 8px 22px rgba(0,0,0,0.55), 0 0 18px ${theme.accentGlow}`, transition: "transform .3s" }}>
+      {/* etiqueta inclinada */}
+      <div style={{ position: "absolute", left: "50%", bottom: -10, transform: "translateX(-50%) skewX(-12deg)",
+                    background: item.soon ? "var(--fg)" : theme.accent, padding: "4px 11px", whiteSpace: "nowrap",
+                    boxShadow: `0 6px 16px rgb(0 0 0 / calc(0.45 * var(--sh-k)))${item.soon ? "" : `, 0 0 14px ${theme.accentGlow}`}` }}>
         <div style={{ transform: "skewX(12deg)", textAlign: "center" }}>
-          <span className="block font-bold uppercase leading-none" style={{ fontFamily: F_DISPLAY, color: "#0a0a0b", fontSize: 17, letterSpacing: "0.04em" }}>
+          <span className="block font-bold uppercase leading-none"
+                style={{ fontFamily: F_DISPLAY, color: item.soon ? "var(--bg)" : "#0a0a0b", fontSize: 12, letterSpacing: "0.04em" }}>
             {item.name}
           </span>
-          <span className="block uppercase mt-1" style={{ fontFamily: F_MONO, color: "#0a0a0b", fontSize: 9.5, letterSpacing: "0.14em", fontWeight: 700 }}>
-            {item.years} · {item.tag}
+          <span className="block uppercase" style={{ marginTop: 3, fontFamily: F_MONO, color: item.soon ? "var(--bg)" : "#0a0a0b",
+                fontSize: 7, letterSpacing: "0.14em", fontWeight: 700 }}>
+            {item.years}{item.tag ? ` · ${item.tag}` : ""}
           </span>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
-function VehicleStrip({ items }) {
+/* Formulario corto para vehículos que aún no tienen build */
+function SoonModal({ item, onClose }) {
+  const { leads, setLeads, theme } = useStore();
+  const [c, setC] = useState({ name: "", phone: "" });
+  const [sent, setSent] = useState(false);
+  useEffect(() => {
+    const k = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const ok = c.name.trim() && c.phone.trim();
+  const send = () => {
+    setLeads([{
+      id: Date.now(),
+      when: new Date().toLocaleString("es-US", { dateStyle: "short", timeStyle: "short" }),
+      vehicle: `${item.name} ${item.years}`,
+      stage: "Interés · build próximamente",
+      wheel: "—", addons: [], airRide: "—",
+      notes: `${c.name.trim()} · ${c.phone.trim()}`, total: 0,
+    }, ...leads]);
+    setSent(true);
+  };
+  const field = { background: "var(--surface-2)", color: "var(--fg)", border: "1px solid var(--line)", fontFamily: F_BODY };
   return (
-    <section className="relative z-10 max-w-6xl mx-auto px-6 -mt-4 sm:-mt-20 md:-mt-36 pb-12">
-      <div className="flex flex-wrap justify-center gap-x-6 gap-y-14">
-        {items.map((it) => <VehicleTile key={it.id} item={it} />)}
+    <div role="dialog" aria-modal="true" aria-label={`${item.name} próximamente`} onClick={onClose}
+         style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgb(0 0 0 / 0.55)", display: "flex",
+                  alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full rounded-md p-6"
+           style={{ maxWidth: 420, background: "var(--surface)", border: `1px solid ${theme.accentLine}`,
+                    boxShadow: "0 30px 80px rgb(0 0 0 / 0.5)" }}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Eyebrow>Próximamente</Eyebrow>
+            <h3 className="text-2xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>{item.name}</h3>
+            <p className="mt-1 text-xs text-zinc-500" style={{ fontFamily: F_MONO }}>{item.years}</p>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="text-zinc-500 hover:text-white transition text-xl leading-none">×</button>
+        </div>
+        {sent ? (
+          <div className="mt-5 flex items-center gap-3 p-4 rounded-md" style={{ background: theme.accentSoft, border: `1px solid ${theme.accent}` }}>
+            <CheckCircle2 size={22} color={theme.accent} />
+            <p className="text-sm text-white" style={{ fontFamily: F_BODY }}>Listo. Te avisamos apenas esté disponible el build.</p>
+          </div>
+        ) : (
+          <div className="mt-5 space-y-3">
+            <p className="text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>
+              Estamos armando el build para este vehículo. Déjanos tu contacto y te avisamos primero.
+            </p>
+            <input type="text" placeholder="Nombre" value={c.name} onChange={(e) => setC({ ...c, name: e.target.value })}
+                   className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+            <input type="text" placeholder="Teléfono / WhatsApp" value={c.phone} onChange={(e) => setC({ ...c, phone: e.target.value })}
+                   className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+            <Button onClick={send} disabled={!ok} full><Send size={16} /> Avísame</Button>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Carrusel tipo "lupa": las tarjetas no cambian de tamaño en el layout; todo se
+   mueve con transform desde un único valor continuo `f` (qué tarjeta está al
+   centro, con decimales). La del centro escala ~1.55x y las vecinas un poco
+   menos y se apartan, así no hay saltos ni reacomodos.
+   Mouse: el cursor en la franja izquierda/derecha desliza la tira (más rápido
+   cuanto más cerca del borde); en el centro se detiene y se acomoda.
+   Táctil: arrastrar con el dedo; al soltar encaja en la tarjeta más cercana.
+   Clic en una tarjeta lateral la trae al centro; clic en la del centro la abre.
+   -------------------------------------------------------------------------*/
+function VehicleStrip({ items }) {
+  const { theme } = useStore();
+  const wrapRef = useRef(null);
+  const tileRefs = useRef([]);
+  const sim = useRef({ f: 0, target: 0, rel: null, drag: null, moved: false, last: 0, raf: 0 });
+  const [active, setActive] = useState(0);
+  const [dims, setDims] = useState({ w: 200, W: 1000 });
+  const [soon, setSoon] = useState(null);
+  const n = items.length;
+  const MAX = 0.55, GAP = 18;
+
+  // Medidas: tarjeta base = tarjeta grande / (1 + MAX)
+  useEffect(() => {
+    const measure = () => {
+      const W = wrapRef.current?.clientWidth || window.innerWidth;
+      const big = Math.max(230, Math.min(330, window.innerWidth * 0.3));
+      setDims({ w: Math.round(big / (1 + MAX)), W });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Coloca cada tarjeta según f (escala + posición), escribiendo directo al DOM
+  const layout = () => {
+    const { f } = sim.current; const { w, W } = dims;
+    const s = items.map((_, i) => 1 + MAX * Math.exp(-((i - f) ** 2) / 0.6));
+    const c = [0];
+    for (let i = 1; i < n; i++) c[i] = c[i - 1] + (w * s[i - 1]) / 2 + GAP + (w * s[i]) / 2;
+    const i0 = Math.max(0, Math.min(n - 1, Math.floor(f))), i1 = Math.min(n - 1, i0 + 1);
+    const cf = c[i0] + (c[i1] - c[i0]) * (f - i0);
+    const shift = W / 2 - cf;
+    items.forEach((_, i) => {
+      const el = tileRefs.current[i]; if (!el) return;
+      const d = Math.abs(i - f);
+      el.style.transform = `translate3d(${(shift + c[i] - w / 2).toFixed(2)}px,0,0) scale(${s[i].toFixed(4)})`;
+      el.style.opacity = (0.5 + 0.5 * Math.exp(-(d * d) / 2)).toFixed(3);
+      el.style.zIndex = String(100 - Math.round(d * 10));
+    });
+  };
+
+  // Bucle de animación: f persigue a target con suavizado exponencial
+  const tick = (now) => {
+    const st = sim.current;
+    const dt = Math.min(0.05, (now - (st.last || now)) / 1000); st.last = now;
+    if (st.rel != null && st.drag == null) {
+      const z = (st.rel - 0.5) * 2;                       // -1 izquierda … 1 derecha
+      const dead = 0.28;
+      if (Math.abs(z) > dead) {
+        const k = (Math.abs(z) - dead) / (1 - dead);
+        st.target = Math.max(0, Math.min(n - 1, st.target + Math.sign(z) * (0.35 + 0.65 * k) * 6.5 * dt));
+      } else {
+        st.target = Math.round(st.target);               // en el centro: se acomoda en la más cercana
+      }
+    }
+    if (st.drag == null) st.f += (st.target - st.f) * (1 - Math.exp(-dt * 11));
+    layout();
+    const a = Math.round(st.f);
+    setActive((prev) => (prev === a ? prev : a));
+    const moving = st.rel != null || st.drag != null || Math.abs(st.target - st.f) > 0.0005;
+    if (moving) st.raf = requestAnimationFrame(tick);
+    else { st.f = st.target; layout(); st.raf = 0; st.last = 0; }
+  };
+  const kick = () => { if (!sim.current.raf) sim.current.raf = requestAnimationFrame(tick); };
+
+  useEffect(() => { layout(); }, [dims]);                   // posición inicial y al redimensionar
+  useEffect(() => () => cancelAnimationFrame(sim.current.raf), []);
+
+  const onPointerMove = (e) => {
+    const st = sim.current; const r = wrapRef.current.getBoundingClientRect();
+    if (e.pointerType === "mouse") { st.rel = (e.clientX - r.left) / r.width; kick(); return; }
+    if (st.drag) {
+      const dx = e.clientX - st.drag.x;
+      if (Math.abs(dx) > 6) st.moved = true;
+      const nf = Math.max(-0.3, Math.min(n - 0.7, st.drag.f - dx / (dims.w * 1.3 + GAP)));
+      const t = performance.now();
+      if (st.drag.t) st.drag.v = (nf - st.f) / Math.max(1, t - st.drag.t) * 1000;   // tarjetas por segundo
+      st.drag.t = t;
+      st.f = st.target = nf;
+      kick();
+    }
+  };
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse") return;
+    sim.current.drag = { x: e.clientX, f: sim.current.f }; sim.current.moved = false;
+  };
+  const endDrag = () => {
+    const st = sim.current; if (!st.drag) return;
+    const v = st.drag.v || 0;                            // un swipe rápido avanza más de una tarjeta
+    st.drag = null;
+    st.target = Math.max(0, Math.min(n - 1, Math.round(st.f + Math.max(-2, Math.min(2, v * 0.1)))));
+    kick();
+  };
+  const onLeave = () => { const st = sim.current; st.rel = null; st.target = Math.round(st.target); kick(); };
+
+  const clickTile = (i) => {
+    const st = sim.current;
+    if (st.moved) { st.moved = false; return; }        // fue un arrastre, no un toque
+    if (i !== Math.round(st.f)) { st.target = i; kick(); return; }   // lateral: traer al centro
+    const it = items[i];
+    it.soon ? setSoon(it) : it.onOpen();
+  };
+  const step = (dir) => { const st = sim.current; st.target = Math.max(0, Math.min(n - 1, Math.round(st.target) + dir)); kick(); };
+
+  const H = Math.round(dims.w * (1 + MAX) * 0.8275) + 56;
+
+  return (
+    <section className="relative z-10 -mt-4 sm:-mt-20 md:-mt-36 pb-6">
+      <div ref={wrapRef} className="dp-strip"
+           onPointerMove={onPointerMove} onPointerDown={onPointerDown} onPointerUp={endDrag} onPointerCancel={endDrag}
+           onPointerLeave={(e) => { if (e.pointerType === "mouse") onLeave(); else endDrag(); }}
+           style={{ position: "relative", height: H, overflow: "hidden", touchAction: "pan-y" }}>
+        {items.map((it, i) => (
+          <button key={it.id} ref={(el) => (tileRefs.current[i] = el)} onClick={() => clickTile(i)}
+                  onFocus={() => { sim.current.target = i; kick(); }}
+                  aria-label={`${it.soon ? "Próximamente" : "Ver build"}: ${it.name} ${it.years}`}
+                  className="absolute text-left"
+                  style={{ left: 0, bottom: 30, transformOrigin: "50% 100%", willChange: "transform" }}>
+            <VehicleTile item={it} big={active === i} width={dims.w} />
+          </button>
+        ))}
+      </div>
+
+      {/* flechas y puntos: alternativa clara para moverse por la tira */}
+      <div className="flex items-center justify-center gap-4 mt-1">
+        <button onClick={() => step(-1)} disabled={active === 0} aria-label="Vehículo anterior"
+                className="flex items-center justify-center rounded-full transition hover:brightness-110 disabled:opacity-30"
+                style={{ width: 30, height: 30, border: "1px solid var(--line)", color: "var(--fg-2)", background: "var(--surface)" }}>
+          <ChevronRight size={15} style={{ transform: "rotate(180deg)" }} />
+        </button>
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          {items.map((_, i) => (
+            <span key={i} style={{ width: active === i ? 18 : 6, height: 6, borderRadius: 3, transition: "width .35s, background .35s",
+                                   background: active === i ? theme.accent : "var(--line-strong)" }} />
+          ))}
+        </div>
+        <button onClick={() => step(1)} disabled={active === n - 1} aria-label="Vehículo siguiente"
+                className="flex items-center justify-center rounded-full transition hover:brightness-110 disabled:opacity-30"
+                style={{ width: 30, height: 30, border: "1px solid var(--line)", color: "var(--fg-2)", background: "var(--surface)" }}>
+          <ChevronRight size={15} />
+        </button>
+      </div>
+
+      {/* El formulario se monta al nivel de la app para quedar sobre el menú y el rastro del cursor */}
+      {soon && createPortal(<SoonModal item={soon} onClose={() => setSoon(null)} />, document.querySelector(".dp-app") || document.body)}
     </section>
   );
 }
@@ -663,7 +897,7 @@ function ShopByVehicle({ scrollTarget }) {
   return (
     <section className="max-w-6xl mx-auto px-6 relative z-10">
       <Reveal y={16}>
-      <div className="rounded-md p-6 md:p-7" style={{ background: "#141417", border: "1px solid #2a2a2f", boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}>
+      <div className="rounded-md p-6 md:p-7" style={{ background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "0 24px 60px rgb(0 0 0 / calc(0.5 * var(--sh-k)))" }}>
         <div className="flex items-center gap-2 mb-5">
           <Search size={18} color={theme.accent} />
           <h3 className="text-lg font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>Shop by Vehicle</h3>
@@ -716,12 +950,12 @@ function ProgressRail() {
           borderRadius: 20,
           // Vidrio esmerilado tipo iOS: desenfoque + saturación del fondo,
           // capa translúcida encima y un brillo interior de 1px en el borde superior.
-          background: "rgba(18,18,21,0.55)",
+          background: "var(--glass)",
           backdropFilter: "blur(24px) saturate(180%)",
           WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.10)",
+          border: "1px solid var(--glass-line)",
           boxShadow:
-            "0 12px 38px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35)",
+            "0 12px 38px rgb(0 0 0 / calc(0.55 * var(--sh-k))), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgb(0 0 0 / calc(0.35 * var(--sh-k)))",
         }}
       >
         {/* Barra de avance del build */}
@@ -749,7 +983,7 @@ function StepHead({ n, title, sub, done }) {
     <div className="flex items-start gap-4 mb-6">
       <div className="flex items-center justify-center shrink-0 rounded-sm font-bold"
            style={{ width: 44, height: 44, fontFamily: F_DISPLAY, fontSize: 20,
-                    background: done ? theme.accent : "#1a1a1e",
+                    background: done ? theme.accent : "var(--surface-3)",
                     color: done ? "#0a0a0b" : theme.accent,
                     border: `1px solid ${theme.accentLine}` }}>
         {done ? <Check size={20} strokeWidth={3} /> : n}
@@ -774,20 +1008,20 @@ function StageStep() {
           return (
             <div key={st.id}
                  className="flex flex-col rounded-md overflow-hidden transition"
-                 style={{ background: "#141417", border: `1px solid ${active ? theme.accent : "#2a2a2f"}`,
+                 style={{ background: "var(--surface)", border: `1px solid ${active ? theme.accent : "var(--line)"}`,
                           boxShadow: active ? `0 0 26px ${theme.accentGlow}` : "none" }}>
               {/* Barra LED superior (fase activa) */}
-              <div style={{ height: 4, background: active ? theme.accent : "#232327" }} />
+              <div style={{ height: 4, background: active ? theme.accent : "var(--line)" }} />
               <div className="p-5 flex flex-col flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase" style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.12em" }}>
-                    Stage {st.id}
+                  <span className="text-[10px] font-bold uppercase" style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.12em" }}>
+                    {st.name}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-sm" style={{ background: "#0f0f12", color: "#a8a8b0", fontFamily: F_MONO, border: "1px solid #2a2a2f" }}>
+                  <span className="text-xs px-2 py-0.5 rounded-sm" style={{ background: "var(--surface-2)", color: "var(--fg-2)", fontFamily: F_MONO, border: "1px solid var(--line)" }}>
                     Lift {st.lift}
                   </span>
                 </div>
-                <h4 className="mt-2 text-xl font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY }}>{st.name}</h4>
+                <h4 className="mt-2 text-3xl font-bold text-white uppercase leading-none" style={{ fontFamily: F_DISPLAY }}>Stage {st.id}</h4>
                 <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed" style={{ fontFamily: F_BODY }}>{st.desc}</p>
 
                 <ul className="mt-4 space-y-1.5 flex-1">
@@ -808,7 +1042,7 @@ function StageStep() {
                   className="mt-3 w-full py-2.5 text-sm font-semibold uppercase rounded-sm transition hover:brightness-110 active:scale-95"
                   style={active
                     ? { background: theme.accent, color: "#0a0a0b", fontFamily: F_DISPLAY, letterSpacing: "0.06em", boxShadow: `0 0 18px ${theme.accentGlow}` }
-                    : { background: "#1c1c20", color: "#e7e7ea", border: "1px solid #2c2c31", fontFamily: F_DISPLAY, letterSpacing: "0.06em" }}
+                    : { background: "var(--surface-3)", color: "var(--fg)", border: "1px solid var(--line)", fontFamily: F_DISPLAY, letterSpacing: "0.06em" }}
                 >
                   {active ? "Seleccionado ✓" : "Seleccionar Stage"}
                 </button>
@@ -852,12 +1086,12 @@ function WheelsStep() {
             <button key={w.id} disabled={!compatible}
                     onClick={() => setWheelId(active ? null : w.id)}
                     className="text-left p-5 rounded-md transition disabled:cursor-not-allowed hover:brightness-110"
-                    style={{ background: "#141417",
-                             border: `1px solid ${active ? theme.accent : "#2a2a2f"}`,
+                    style={{ background: "var(--surface)",
+                             border: `1px solid ${active ? theme.accent : "var(--line)"}`,
                              opacity: compatible ? 1 : 0.45,
                              boxShadow: active ? `0 0 22px ${theme.accentGlow}` : "none" }}>
               <div className="flex items-center justify-between">
-                <span className="text-xs px-2 py-0.5 rounded-sm uppercase" style={{ background: "#0f0f12", color: theme.accent, fontFamily: F_MONO, border: "1px solid #2a2a2f" }}>{w.type}</span>
+                <span className="text-xs px-2 py-0.5 rounded-sm uppercase" style={{ background: "var(--surface-2)", color: theme.accent, fontFamily: F_MONO, border: "1px solid var(--line)" }}>{w.type}</span>
                 {compatible
                   ? active && <CheckCircle2 size={18} color={theme.accent} />
                   : <span className="text-[10px] uppercase text-zinc-500" style={{ fontFamily: F_MONO }}>Requiere Stage {w.minStage}+</span>}
@@ -886,12 +1120,12 @@ function MultiStep({ n, title, sub, items, selected, setSelected }) {
           return (
             <button key={it.id} onClick={() => toggle(it.id)}
                     className="text-left p-5 rounded-md transition hover:brightness-110 flex flex-col"
-                    style={{ background: "#141417", border: `1px solid ${active ? theme.accent : "#2a2a2f"}`,
+                    style={{ background: "var(--surface)", border: `1px solid ${active ? theme.accent : "var(--line)"}`,
                              boxShadow: active ? `0 0 22px ${theme.accentGlow}` : "none" }}>
               <div className="flex items-center justify-between">
-                {Icon ? <Icon size={22} color={active ? theme.accent : "#71717a"} /> : <Shield size={22} color={active ? theme.accent : "#71717a"} />}
+                {Icon ? <Icon size={22} color="currentColor" style={{ color: active ? theme.accent : "var(--fg-4)" }} /> : <Shield size={22} color="currentColor" style={{ color: active ? theme.accent : "var(--fg-4)" }} />}
                 <span className="flex items-center justify-center rounded-sm shrink-0"
-                      style={{ width: 22, height: 22, background: active ? theme.accent : "transparent", border: `1px solid ${active ? theme.accent : "#3a3a40"}` }}>
+                      style={{ width: 22, height: 22, background: active ? theme.accent : "transparent", border: `1px solid ${active ? theme.accent : "var(--line-strong)"}` }}>
                   {active && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
                 </span>
               </div>
@@ -928,7 +1162,7 @@ function BuildItYourself() {
     chosenExtras.reduce((s, o) => s + o.price, 0);
 
   const lines = [
-    stage && { k: `Stage ${stage.id} · ${stage.name}`, v: money(stage.price) },
+    stage && { k: `${stage.name} · Stage ${stage.id}`, v: money(stage.price) },
     wheel && { k: `Rines · ${wheel.name}`, v: money(wheel.price) },
     ...perfs.map((p) => ({ k: `Performance · ${p.name}`, v: money(p.price) })),
     ...armors.map((a) => ({ k: `Armor · ${a.name}`, v: money(a.price) })),
@@ -941,7 +1175,7 @@ function BuildItYourself() {
       id: Date.now(),
       when: new Date().toLocaleString("es-US", { dateStyle: "short", timeStyle: "short" }),
       vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? " " + vehicle.trim : ""}`,
-      stage: stage ? `Stage ${stage.id} ${stage.name}` : "—",
+      stage: stage ? `${stage.name} · Stage ${stage.id}` : "—",
       wheel: wheel?.name || "—",
       addons: [...perfs.map((p) => p.name), ...armors.map((a) => a.name), ...chosenExtras.map((o) => o.label)],
       airRide: airRide ? (airRide === "si" ? "Sí" : "No") : "—",
@@ -961,7 +1195,7 @@ function BuildItYourself() {
       </h3>
 
       {/* ---- Opciones de instalación y extras (paso final) ---- */}
-      <div className="mt-6 rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+      <div className="mt-6 rounded-md p-5" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-4">
           <Wrench size={16} color={theme.accent} />
           <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>
@@ -971,7 +1205,7 @@ function BuildItYourself() {
 
         {/* Pregunta: air ride de fábrica */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4"
-             style={{ borderBottom: "1px solid #1e1e22" }}>
+             style={{ borderBottom: "1px solid var(--line)" }}>
           <span className="text-sm text-zinc-300" style={{ fontFamily: F_BODY }}>
             ¿El vehículo trae <b className="text-white">Air Ride System</b> de fábrica?
           </span>
@@ -982,9 +1216,9 @@ function BuildItYourself() {
                 <button key={v} onClick={() => setAirRide(on ? "" : v)}
                         className="px-5 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
                         style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
-                                 background: on ? theme.accent : "#1c1c20",
-                                 color: on ? "#0a0a0b" : "#c9c9cf",
-                                 border: `1px solid ${on ? theme.accent : "#2c2c31"}` }}>
+                                 background: on ? theme.accent : "var(--surface-3)",
+                                 color: on ? "#0a0a0b" : "var(--fg-2)",
+                                 border: `1px solid ${on ? theme.accent : "var(--line)"}` }}>
                   {t}
                 </button>
               );
@@ -999,11 +1233,11 @@ function BuildItYourself() {
             return (
               <button key={o.id} onClick={() => toggleExtra(o.id)}
                       className="w-full flex items-center gap-3 p-3 rounded-sm text-left transition hover:brightness-110"
-                      style={{ background: on ? theme.accentSoft : "#141417",
-                               border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
+                      style={{ background: on ? theme.accentSoft : "var(--surface)",
+                               border: `1px solid ${on ? theme.accent : "var(--line)"}` }}>
                 <span className="flex items-center justify-center rounded-sm shrink-0"
                       style={{ width: 20, height: 20, background: on ? theme.accent : "transparent",
-                               border: `1px solid ${on ? theme.accent : "#3a3a40"}` }}>
+                               border: `1px solid ${on ? theme.accent : "var(--line-strong)"}` }}>
                   {on && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
                 </span>
                 <span className="flex-1">
@@ -1019,7 +1253,7 @@ function BuildItYourself() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Resumen dinámico */}
-        <div className="rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+        <div className="rounded-md p-5" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 mb-3">
             <Car size={16} color={theme.accent} />
             <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.05em" }}>
@@ -1033,7 +1267,7 @@ function BuildItYourself() {
           ) : (
             <div className="divide-y" style={{ borderColor: "#22222700" }}>
               {lines.map((l, i) => (
-                <div key={i} className="flex justify-between py-2 text-sm" style={{ borderTop: i ? "1px solid #1e1e22" : "none" }}>
+                <div key={i} className="flex justify-between py-2 text-sm" style={{ borderTop: i ? "1px solid var(--line)" : "none" }}>
                   <span className="text-zinc-300" style={{ fontFamily: F_BODY }}>{l.k}</span>
                   <span className="text-white font-semibold" style={{ fontFamily: F_MONO }}>{l.v}</span>
                 </div>
@@ -1057,7 +1291,7 @@ function BuildItYourself() {
             placeholder="Cuéntanos tu uso (calle, trail, overland, race), presupuesto objetivo, o dudas técnicas…"
             rows={6}
             className="w-full p-4 text-sm outline-none rounded-md resize-none"
-            style={{ background: "#101013", color: "#f2f2f4", border: "1px solid #2a2a2f", fontFamily: F_BODY }}
+            style={{ background: "var(--surface-2)", color: "var(--fg)", border: "1px solid var(--line)", fontFamily: F_BODY }}
           />
           <div className="mt-4">
             {sent ? (
@@ -1117,7 +1351,7 @@ function ProductHero({ product, priced, theme, onBack, onStart }) {
   const breakAt = words.findIndex((w) => /\d/.test(w));
 
   return (
-    <header className="relative overflow-hidden border-b" style={{ ...carbon, borderColor: "#1e1e22" }}>
+    <header className="dp-dark relative overflow-hidden border-b" style={{ ...carbon, borderColor: "var(--line)" }}>
       {/* atmósfera: la misma foto, desenfocada y oscura, detrás de todo */}
       <div className="absolute inset-0 dp-anim" aria-hidden="true"
            style={{ backgroundImage: `url(${PRODUCT_BG})`, backgroundSize: "cover", backgroundPosition: "center 40%",
@@ -1157,7 +1391,7 @@ function ProductHero({ product, priced, theme, onBack, onStart }) {
             <div className="dp-anim" style={{ animation: "dp-rise .8s cubic-bezier(.22,1,.36,1) .85s both" }}>
               <p className="mt-3 text-zinc-300 md:text-lg" style={{ fontFamily: F_BODY }}>{product.subtitle}</p>
               <span className="inline-flex items-center gap-2 mt-4 text-xs px-3 py-1.5 rounded-sm text-zinc-300"
-                    style={{ border: "1px solid #2a2a2f", background: "rgba(16,16,19,0.8)", fontFamily: F_MONO }}>
+                    style={{ border: "1px solid var(--line)", background: "rgba(16,16,19,0.8)", fontFamily: F_MONO }}>
                 <Car size={13} color={theme.accent} /> {product.fitment}
               </span>
               <div className="mt-5 flex items-baseline gap-3">
@@ -1177,7 +1411,7 @@ function ProductHero({ product, priced, theme, onBack, onStart }) {
                  style={{ aspectRatio: "1200 / 1041", "--mx": 0, "--my": 0 }}>
               {/* marco que se revela con el barrido */}
               <div className="absolute inset-0 overflow-hidden rounded-md dp-anim"
-                   style={{ border: "1px solid #2a2a2f", boxShadow: "0 30px 70px rgba(0,0,0,0.6)",
+                   style={{ border: "1px solid var(--line)", boxShadow: "0 30px 70px rgb(0 0 0 / calc(0.6 * var(--sh-k)))",
                             animation: "dp-wipe 1.05s cubic-bezier(.77,0,.18,1) .15s both" }}>
                 {/* acercamiento lento de cámara */}
                 <div className="absolute inset-0 dp-anim" style={{ animation: "dp-zoom 2.6s cubic-bezier(.22,1,.36,1) .15s both" }}>
@@ -1187,7 +1421,7 @@ function ProductHero({ product, priced, theme, onBack, onStart }) {
                   <img src={PRODUCT_TRUCK} alt={product.title} className="absolute inset-0 w-full h-full"
                        style={{ objectFit: "cover", transform: "translate3d(calc(var(--mx) * 3px), calc(var(--my) * 2px), 0) scale(1.03)",
                                 transition: "transform .5s cubic-bezier(.22,1,.36,1)",
-                                filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.35))" }} />
+                                filter: "drop-shadow(0 10px 14px rgb(0 0 0 / calc(0.35 * var(--sh-k))))" }} />
                 </div>
                 {/* viñeta + líneas de escaneo de marca */}
                 <div className="absolute inset-0" aria-hidden="true" style={{ pointerEvents: "none",
@@ -1259,6 +1493,7 @@ function ProductView() {
   const [sent, setSent] = useState(false);
   const extrasRef = useRef(null);
   const tiresRef = useRef(null);
+  const airRef = useRef(null);
 
   useEffect(() => { window.scrollTo({ top: 0 }); }, []);
 
@@ -1291,7 +1526,30 @@ function ProductView() {
     setTimeout(() => extrasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 90);
   };
 
-  const canSend = tire && contact.name.trim() && contact.phone.trim();
+  const hasContact = contact.name.trim() && contact.phone.trim();
+  const canSend = tire && hasContact;
+
+  const pickAir = (v) => {
+    setAirRide(v);
+    setSent(false);
+    if (v === "no") setTimeout(() => tiresRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+  };
+
+  // Air Ride = Sí: se registra el lead solo para asesoría, sin llantas ni extras
+  const submitAdvice = () => {
+    setLeads([{
+      id: Date.now(),
+      when: new Date().toLocaleString("es-US", { dateStyle: "short", timeStyle: "short" }),
+      vehicle: product.fitment,
+      stage: `${product.title} · asesoría (Air Ride)`,
+      wheel: "—",
+      addons: [],
+      airRide: "Sí",
+      notes: [`${contact.name.trim()} · ${contact.phone.trim()}`, notes.trim()].filter(Boolean).join(" — "),
+      total: 0,
+    }, ...leads]);
+    setSent(true);
+  };
   const submit = () => {
     setLeads([{
       id: Date.now(),
@@ -1311,7 +1569,7 @@ function ProductView() {
     <div className="flex items-start gap-4 mb-6">
       <div className="flex items-center justify-center shrink-0 rounded-sm font-bold"
            style={{ width: 44, height: 44, fontFamily: F_DISPLAY, fontSize: 20,
-                    background: done ? theme.accent : "#1a1a1e", color: done ? "#0a0a0b" : theme.accent,
+                    background: done ? theme.accent : "var(--surface-3)", color: done ? "#0a0a0b" : theme.accent,
                     border: `1px solid ${theme.accentLine}` }}>
         {done ? <Check size={20} strokeWidth={3} /> : n}
       </div>
@@ -1322,16 +1580,156 @@ function ProductView() {
     </div>
   );
 
-  const field = { background: "#101013", color: "#f2f2f4", border: "1px solid #2a2a2f", fontFamily: F_BODY };
+  const field = { background: "var(--surface-2)", color: "var(--fg)", border: "1px solid var(--line)", fontFamily: F_BODY };
 
   return (
     <div>
       {/* ---- Cabecera del producto: foto original animada (entrada + profundidad + callouts técnicos) ---- */}
       <ProductHero product={product} priced={priced} theme={theme}
                    onBack={() => setView("client")}
-                   onStart={() => tiresRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+                   onStart={() => airRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
 
       <div className="max-w-6xl mx-auto px-6 pt-14 pb-24 space-y-16">
+        {/* ---- Paso 1: Air Ride de fábrica (decide si el kit aplica) ---- */}
+        <Reveal>
+          <section ref={airRef} style={{ scrollMarginTop: 90 }}>
+            {stepHead("1", "¿Tu Tundra trae Air Ride System?", "Es lo primero que necesitamos saber: el kit BDS 7\" no es compatible con la suspensión Air Ride de fábrica.", !!airRide)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[["no", "No", "Suspensión convencional de fábrica."], ["si", "Sí", "Mi Tundra trae Air Ride de fábrica."]].map(([v, t, d]) => {
+                const on = airRide === v;
+                return (
+                  <button key={v} onClick={() => pickAir(v)}
+                          className="text-left p-6 rounded-md transition hover:brightness-110"
+                          style={{ background: "var(--surface)", border: `1px solid ${on ? theme.accent : "var(--line)"}`,
+                                   boxShadow: on ? `0 0 26px ${theme.accentGlow}` : "none" }}>
+                    <div className="flex items-start justify-between">
+                      <span className="font-bold text-white leading-none" style={{ fontFamily: F_DISPLAY, fontSize: "2.6rem" }}>{t}</span>
+                      {on && <CheckCircle2 size={22} color={theme.accent} />}
+                    </div>
+                    <p className="mt-3 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>{d}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Si trae Air Ride: el flujo se detiene y pedimos contacto */}
+            {airRide === "si" && (
+              <div className="mt-6 rounded-md p-5 md:p-6" style={{ background: "var(--surface-2)", border: "1px solid rgba(234,179,8,0.35)" }}>
+                <div className="flex gap-3">
+                  <AlertTriangle size={20} color="#eab308" className="shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.04em" }}>
+                      Este kit no aplica para Air Ride de fábrica
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>
+                      Déjanos tus datos y el Team Dynopro te asesora con la mejor opción para tu Tundra.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5">
+                  {sent ? (
+                    <div className="flex items-center gap-3 p-4 rounded-md" style={{ background: theme.accentSoft, border: `1px solid ${theme.accent}` }}>
+                      <CheckCircle2 size={22} color={theme.accent} />
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase" style={{ fontFamily: F_DISPLAY }}>¡Solicitud enviada!</p>
+                        <p className="text-xs text-zinc-400" style={{ fontFamily: F_BODY }}>El Team Dynopro te contacta para asesorarte.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-w-2xl">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="block">
+                          <span className="flex items-center gap-1.5 text-xs uppercase text-zinc-500 mb-1.5 font-semibold" style={{ letterSpacing: "0.12em", fontFamily: F_MONO }}><User size={12} /> Nombre</span>
+                          <input type="text" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })}
+                                 className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+                        </label>
+                        <label className="block">
+                          <span className="flex items-center gap-1.5 text-xs uppercase text-zinc-500 mb-1.5 font-semibold" style={{ letterSpacing: "0.12em", fontFamily: F_MONO }}><Phone size={12} /> Teléfono / WhatsApp</span>
+                          <input type="text" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                                 className="w-full px-3 py-3 text-sm outline-none rounded-sm" style={field} />
+                        </label>
+                      </div>
+                      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+                                placeholder="Notas (opcional): año y trim de tu Tundra, qué buscas…"
+                                className="w-full p-3 text-sm outline-none rounded-sm resize-none" style={field} />
+                      <Button onClick={submitAdvice} disabled={!hasContact} full>
+                        <Send size={16} /> Pedir asesoría al Team Dynopro
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        </Reveal>
+
+        {airRide === "no" && (
+          <>
+        {/* ---- Paso 2: medida de llanta ---- */}
+        <Reveal>
+          <section ref={tiresRef} style={{ scrollMarginTop: 90 }}>
+            {stepHead("2", "Elige tu medida de llanta", "El build está preparado para 37\" o 40\". Escoge cuál vas a correr.", !!tire)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {product.tires.map((t) => {
+                const on = tire === t.id;
+                return (
+                  <button key={t.id} onClick={() => pickTire(t.id)}
+                          className="text-left p-6 rounded-md transition hover:brightness-110"
+                          style={{ background: "var(--surface)", border: `1px solid ${on ? theme.accent : "var(--line)"}`,
+                                   boxShadow: on ? `0 0 26px ${theme.accentGlow}` : "none" }}>
+                    <div className="flex items-start justify-between">
+                      <span className="font-bold text-white leading-none" style={{ fontFamily: F_DISPLAY, fontSize: "3.4rem" }}>{t.label}</span>
+                      {on && <CheckCircle2 size={22} color={theme.accent} />}
+                    </div>
+                    <span className="block mt-1 text-xs uppercase text-zinc-500" style={{ fontFamily: F_MONO, letterSpacing: "0.12em" }}>Llantas</span>
+                    <p className="mt-3 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>{t.note}</p>
+                    <span className="block mt-4 text-base font-bold text-white" style={{ fontFamily: F_MONO }}>{priced(t.price)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* ---- Paso 3: instalación y extras (se desbloquea al elegir llanta) ---- */}
+        <section ref={extrasRef} style={{ scrollMarginTop: 90 }}>
+          {stepHead("3", "Instalación y extras", "Suma los servicios del Team Dynopro a tu build.", extras.length > 0)}
+          {!tire ? (
+            <div className="rounded-md p-8 text-center" style={{ background: "var(--surface-2)", border: "1px dashed var(--line)" }}>
+              <Lock size={20} color={theme.accent} className="mx-auto" />
+              <p className="mt-2 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>Elige primero la medida de llanta.</p>
+            </div>
+          ) : (
+            <div className="rounded-md p-5" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
+              <div className="space-y-2">
+                {finalOpts.map((o) => {
+                  const ok = applies(o);
+                  const on = ok && extras.includes(o.id);
+                  return (
+                    <button key={o.id} onClick={() => ok && toggle(o.id)} disabled={!ok}
+                            className="w-full flex items-center gap-3 p-3 rounded-sm text-left transition hover:brightness-110 disabled:cursor-not-allowed"
+                            style={{ background: on ? theme.accentSoft : "var(--surface)", opacity: ok ? 1 : 0.45,
+                                     border: `1px solid ${on ? theme.accent : "var(--line)"}` }}>
+                      <span className="flex items-center justify-center rounded-sm shrink-0"
+                            style={{ width: 20, height: 20, background: on ? theme.accent : "transparent",
+                                     border: `1px solid ${on ? theme.accent : "var(--line-strong)"}` }}>
+                        {on && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm text-white" style={{ fontFamily: F_BODY }}>{o.label}</span>
+                        <span className="block text-[11px] text-zinc-500 mt-0.5" style={{ fontFamily: F_MONO }}>
+                          {ok ? o.note : `No aplica con llantas de ${tireObj.label}.`}
+                        </span>
+                      </span>
+                      <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: F_MONO }}>{money(o.price)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* ---- Lo que incluye ---- */}
         <Reveal>
           <section>
@@ -1347,11 +1745,11 @@ function ProductView() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {product.includes.map((it) => (
                 <article key={it.id} className="flex flex-col rounded-md overflow-hidden"
-                         style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                         style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
                   <div className="bg-white flex items-center justify-center" style={{ aspectRatio: "16 / 10" }}>
                     {it.img
                       ? <img src={it.img} alt={it.name} className="w-full h-full p-3" style={{ objectFit: "contain" }} loading="lazy" />
-                      : <ImageIcon size={28} color="#a1a1aa" />}
+                      : <ImageIcon size={28} color="currentColor" style={{ color: "var(--fg-3)" }} />}
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <span className="text-[10px] font-bold uppercase" style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.14em" }}>{it.brand}</span>
@@ -1372,99 +1770,11 @@ function ProductView() {
           </section>
         </Reveal>
 
-        {/* ---- Paso 1: medida de llanta ---- */}
-        <Reveal>
-          <section ref={tiresRef} style={{ scrollMarginTop: 90 }}>
-            {stepHead("1", "Elige tu medida de llanta", "El build está preparado para 37\" o 40\". Escoge cuál vas a correr.", !!tire)}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {product.tires.map((t) => {
-                const on = tire === t.id;
-                return (
-                  <button key={t.id} onClick={() => pickTire(t.id)}
-                          className="text-left p-6 rounded-md transition hover:brightness-110"
-                          style={{ background: "#141417", border: `1px solid ${on ? theme.accent : "#2a2a2f"}`,
-                                   boxShadow: on ? `0 0 26px ${theme.accentGlow}` : "none" }}>
-                    <div className="flex items-start justify-between">
-                      <span className="font-bold text-white leading-none" style={{ fontFamily: F_DISPLAY, fontSize: "3.4rem" }}>{t.label}</span>
-                      {on && <CheckCircle2 size={22} color={theme.accent} />}
-                    </div>
-                    <span className="block mt-1 text-xs uppercase text-zinc-500" style={{ fontFamily: F_MONO, letterSpacing: "0.12em" }}>Llantas</span>
-                    <p className="mt-3 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>{t.note}</p>
-                    <span className="block mt-4 text-base font-bold text-white" style={{ fontFamily: F_MONO }}>{priced(t.price)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </Reveal>
+          </>
+        )}
 
-        {/* ---- Paso 2: instalación y extras (se desbloquea al elegir llanta) ---- */}
-        <section ref={extrasRef} style={{ scrollMarginTop: 90 }}>
-          {stepHead("2", "Instalación y extras", "Último paso: dinos cómo viene tu truck y qué servicios quieres sumar.", false)}
-          {!tire ? (
-            <div className="rounded-md p-8 text-center" style={{ background: "#101013", border: "1px dashed #2a2a2f" }}>
-              <Lock size={20} color={theme.accent} className="mx-auto" />
-              <p className="mt-2 text-sm text-zinc-400" style={{ fontFamily: F_BODY }}>Elige primero la medida de llanta.</p>
-            </div>
-          ) : (
-            <div className="rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4" style={{ borderBottom: "1px solid #1e1e22" }}>
-                <span className="text-sm text-zinc-300" style={{ fontFamily: F_BODY }}>
-                  ¿Tu Tundra trae <b className="text-white">Air Ride System</b> de fábrica?
-                </span>
-                <div className="flex gap-2">
-                  {[["si", "Sí"], ["no", "No"]].map(([v, t]) => {
-                    const on = airRide === v;
-                    return (
-                      <button key={v} onClick={() => setAirRide(on ? "" : v)}
-                              className="px-5 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
-                              style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
-                                       background: on ? theme.accent : "#1c1c20", color: on ? "#0a0a0b" : "#c9c9cf",
-                                       border: `1px solid ${on ? theme.accent : "#2c2c31"}` }}>{t}</button>
-                    );
-                  })}
-                </div>
-              </div>
-              {airRide === "si" && (
-                <div className="flex gap-3 p-3 mb-4 rounded-sm" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)" }}>
-                  <AlertTriangle size={16} color="#eab308" className="shrink-0 mt-0.5" />
-                  <p className="text-xs text-zinc-300" style={{ fontFamily: F_BODY }}>
-                    El kit BDS 7" no es compatible con Air Ride de fábrica. Envía tu solicitud igual: el Team te contacta para revisar la mejor opción para tu truck.
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {finalOpts.map((o) => {
-                  const ok = applies(o);
-                  const on = ok && extras.includes(o.id);
-                  return (
-                    <button key={o.id} onClick={() => ok && toggle(o.id)} disabled={!ok}
-                            className="w-full flex items-center gap-3 p-3 rounded-sm text-left transition hover:brightness-110 disabled:cursor-not-allowed"
-                            style={{ background: on ? theme.accentSoft : "#141417", opacity: ok ? 1 : 0.45,
-                                     border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
-                      <span className="flex items-center justify-center rounded-sm shrink-0"
-                            style={{ width: 20, height: 20, background: on ? theme.accent : "transparent",
-                                     border: `1px solid ${on ? theme.accent : "#3a3a40"}` }}>
-                        {on && <Check size={13} color="#0a0a0b" strokeWidth={3} />}
-                      </span>
-                      <span className="flex-1">
-                        <span className="block text-sm text-white" style={{ fontFamily: F_BODY }}>{o.label}</span>
-                        <span className="block text-[11px] text-zinc-500 mt-0.5" style={{ fontFamily: F_MONO }}>
-                          {ok ? o.note : `No aplica con llantas de ${tireObj.label}.`}
-                        </span>
-                      </span>
-                      <span className="text-sm font-bold text-white shrink-0" style={{ fontFamily: F_MONO }}>{money(o.price)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* ---- Paso 3: resumen y envío ---- */}
-        {tire && (
+        {/* ---- Paso 4: resumen y envío ---- */}
+        {airRide === "no" && tire && (
           <Reveal>
             <section style={carbon} className="rounded-md p-6 md:p-8">
               <Eyebrow>Resumen</Eyebrow>
@@ -1472,9 +1782,9 @@ function ProductView() {
                 Pide tu build al Team Dynopro
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div className="rounded-md p-5" style={{ background: "#101013", border: "1px solid #2a2a2f" }}>
+                <div className="rounded-md p-5" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
                   {lines.map((l, i) => (
-                    <div key={i} className="flex justify-between gap-4 py-2 text-sm" style={{ borderTop: i ? "1px solid #1e1e22" : "none" }}>
+                    <div key={i} className="flex justify-between gap-4 py-2 text-sm" style={{ borderTop: i ? "1px solid var(--line)" : "none" }}>
                       <span className="text-zinc-300" style={{ fontFamily: F_BODY }}>{l.k}</span>
                       <span className="text-white font-semibold shrink-0" style={{ fontFamily: F_MONO }}>{l.v}</span>
                     </div>
@@ -1534,27 +1844,89 @@ function ProductView() {
   );
 }
 
+function SiteFooter() {
+  const { theme } = useStore();
+  return (
+    <footer className="border-t" style={{ borderColor: "var(--line)", background: "var(--bg)" }}>
+      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-3">
+        <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.08em" }}>
+          407<span style={{ color: theme.accent }}>DYNOPRO</span>
+        </span>
+        <span className="text-xs text-zinc-600" style={{ fontFamily: F_MONO }}>Performance 4x4 · Florida · Prototipo demo</span>
+      </div>
+    </footer>
+  );
+}
+
+/* INICIO: hero, tira de builds pre-armados y el acceso a "Arma tu build" */
 function ClientView() {
-  const { searched, resetAll, theme, stageId, wheelId, perfIds, armorIds,
-          setPerfIds, setArmorIds, perf, armor,
-          setVehicle, setSearched, resetBuild, setView } = useStore();
-  const configRef = useRef(null);
+  const { setView } = useStore();
 
   // Builds pre-armados que aparecen en la tira bajo el hero (sumar aquí los próximos vehículos)
   const prebuilt = [
     { id: "tundra-23", name: "Toyota Tundra", years: "2023 – ON", tag: '37" – 40"',
       img: TUNDRA_CUTOUT, onOpen: () => setView("product") },
+    // Próximamente: sin foto todavía; al tocarlas piden contacto
+    { id: "4runner", name: "Toyota 4Runner",   years: "2025 – ON", soon: true },
+    { id: "tacoma",  name: "Toyota Tacoma",    years: "2024 – ON", soon: true },
+    { id: "lc250",   name: "Land Cruiser 250", years: "2024 – ON", soon: true },
+    { id: "jl",      name: "Jeep Wrangler JL", years: "2018 – ON", soon: true },
+    { id: "jt",      name: "Jeep Gladiator JT", years: "2020 – ON", soon: true },
+    { id: "f250",    name: "Ford F-250",       years: "2023 – ON", soon: true },
+    { id: "ram2500", name: "RAM 2500",         years: "2019 – ON", soon: true },
   ];
 
   return (
     <div>
       <Hero />
       <VehicleStrip items={prebuilt} />
-      <ShopByVehicle scrollTarget={configRef} />
+
+      <section className="max-w-6xl mx-auto px-6 pt-4 pb-20 text-center">
+        <p className="text-sm text-zinc-400 max-w-md mx-auto" style={{ fontFamily: F_BODY }}>
+          ¿Tu vehículo no está en la lista? Elige año, marca y modelo, y arma tu build por etapas.
+        </p>
+        <div className="mt-5 flex justify-center">
+          <Button onClick={() => setView("build")}>
+            <Wrench size={16} /> Arma tu build
+          </Button>
+        </div>
+      </section>
+
+      <SiteFooter />
+    </div>
+  );
+}
+
+/* ARMA TU BUILD: buscador por vehículo + configurador por etapas */
+function BuildView() {
+  const { searched, resetAll, perfIds, armorIds, setPerfIds, setArmorIds, perf, armor, setView } = useStore();
+  const configRef = useRef(null);
+
+  useEffect(() => { window.scrollTo({ top: 0 }); }, []);
+
+  return (
+    <div>
+      <header style={carbon} className="border-b" >
+        <div className="max-w-6xl mx-auto px-6 pt-6 pb-20 md:pb-24">
+          <button onClick={() => setView("client")}
+                  className="inline-flex items-center gap-2 text-xs uppercase text-zinc-400 hover:text-white transition mb-6"
+                  style={{ fontFamily: F_MONO, letterSpacing: "0.1em" }}>
+            <ArrowLeft size={14} /> Volver al inicio
+          </button>
+          <Eyebrow>Configurador</Eyebrow>
+          <SectionTitle sub="Elige tu vehículo y arma tu build por etapas: Dynopro Sport Package, rines y cauchos, performance y armor.">
+            Arma tu build
+          </SectionTitle>
+        </div>
+      </header>
+
+      <div className="-mt-12">
+        <ShopByVehicle scrollTarget={configRef} />
+      </div>
 
       {!searched ? (
         <div className="max-w-6xl mx-auto px-6 py-24 text-center">
-          <Gauge size={40} color="#3a3a40" className="mx-auto" />
+          <Gauge size={40} color="currentColor" style={{ color: "var(--line-strong)" }} className="mx-auto" />
           <p className="mt-4 text-zinc-500" style={{ fontFamily: F_BODY }}>
             Selecciona tu vehículo arriba para desbloquear los Dynopro Sport Packages.
           </p>
@@ -1585,14 +1957,7 @@ function ClientView() {
         </div>
       )}
 
-      <footer className="border-t" style={{ borderColor: "#1e1e22", background: "#0a0a0b" }}>
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-3">
-          <span className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.08em" }}>
-            407<span style={{ color: theme.accent }}>DYNOPRO</span>
-          </span>
-          <span className="text-xs text-zinc-600" style={{ fontFamily: F_MONO }}>Performance 4x4 · Florida · Prototipo demo</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -1603,8 +1968,8 @@ function ClientView() {
 function AdminPanel({ title, icon: Icon, children }) {
   const { theme } = useStore();
   return (
-    <div className="rounded-md" style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
-      <div className="flex items-center gap-2 px-5 py-4 border-b" style={{ borderColor: "#22222a" }}>
+    <div className="rounded-md" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <div className="flex items-center gap-2 px-5 py-4 border-b" style={{ borderColor: "var(--line)" }}>
         <Icon size={16} color={theme.accent} />
         <h3 className="text-sm font-bold uppercase text-white" style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em" }}>{title}</h3>
       </div>
@@ -1621,7 +1986,7 @@ function AdminField({ label, children }) {
     </label>
   );
 }
-const inputStyle = { background: "#101013", color: "#f2f2f4", border: "1px solid #2a2a2f", fontFamily: F_BODY };
+const inputStyle = { background: "var(--surface-2)", color: "var(--fg)", border: "1px solid var(--line)", fontFamily: F_BODY };
 
 function StyleControls() {
   const { accentMode, setAccentMode, intensity, setIntensity, brand, setBrand, theme } = useStore();
@@ -1637,9 +2002,9 @@ function StyleControls() {
                 <button key={m.id} onClick={() => setAccentMode(m.id)}
                         className="flex-1 py-2.5 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
                         style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
-                                 background: on ? theme.accent : "#101013",
-                                 color: on ? "#0a0a0b" : "#c9c9cf",
-                                 border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
+                                 background: on ? theme.accent : "var(--surface-2)",
+                                 color: on ? "#0a0a0b" : "var(--fg-2)",
+                                 border: `1px solid ${on ? theme.accent : "var(--line)"}` }}>
                   {m.label}
                 </button>
               );
@@ -1660,14 +2025,14 @@ function StyleControls() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AdminField label="URL del logo 407Dynopro">
             <div className="flex items-center gap-2">
-              <ImageIcon size={15} color="#71717a" />
+              <ImageIcon size={15} color="currentColor" style={{ color: "var(--fg-4)" }} />
               <input value={brand.logoUrl} onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
                      placeholder="https://…/logo.png" className="w-full px-3 py-2.5 text-sm outline-none rounded-sm" style={inputStyle} />
             </div>
           </AdminField>
           <AdminField label="URL de foto Hero (fondo)">
             <div className="flex items-center gap-2">
-              <ImageIcon size={15} color="#71717a" />
+              <ImageIcon size={15} color="currentColor" style={{ color: "var(--fg-4)" }} />
               <input value={brand.heroUrl} onChange={(e) => setBrand({ ...brand, heroUrl: e.target.value })}
                      placeholder="https://…/truck.jpg" className="w-full px-3 py-2.5 text-sm outline-none rounded-sm" style={inputStyle} />
             </div>
@@ -1710,9 +2075,9 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
       const opts = typeof f.options === "function" ? f.options(it) : f.options;
       return (
         <select {...common} value={it[f.k] ?? ""} onChange={(e) => patch(it.id, f.k, f.parse ? f.parse(e.target.value) : e.target.value)}>
-          {f.placeholder && <option value="" style={{ background: "#141417" }}>{f.placeholder}</option>}
+          {f.placeholder && <option value="" style={{ background: "var(--surface)" }}>{f.placeholder}</option>}
           {opts.map((o) => (
-            <option key={String(o.v ?? o)} value={o.v ?? o} style={{ background: "#141417" }}>{o.t ?? o}</option>
+            <option key={String(o.v ?? o)} value={o.v ?? o} style={{ background: "var(--surface)" }}>{o.t ?? o}</option>
           ))}
         </select>
       );
@@ -1721,11 +2086,11 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
       return (
         <div className="flex items-center gap-3">
           <div className="shrink-0 overflow-hidden rounded-sm"
-               style={{ width: 52, height: 40, background: "#0a0a0b", border: "1px solid #2a2a2f" }}>
+               style={{ width: 52, height: 40, background: "var(--bg)", border: "1px solid var(--line)" }}>
             {it[f.k]
               ? <img src={it[f.k]} alt="" className="w-full h-full" style={{ objectFit: "cover" }}
                      onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
-              : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={14} color="#3a3a40" /></div>}
+              : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={14} color="currentColor" style={{ color: "var(--line-strong)" }} /></div>}
           </div>
           <input {...common} type="text" value={it[f.k] ?? ""} placeholder="https://…"
                  onChange={(e) => patch(it.id, f.k, e.target.value)} />
@@ -1744,10 +2109,10 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
         {note && <p className="text-xs text-zinc-500" style={{ fontFamily: F_MONO }}>› {note}</p>}
 
         {items.map((it) => (
-          <div key={it.id} className="rounded-md p-4" style={{ background: "#101013", border: "1px solid #22222a" }}>
+          <div key={it.id} className="rounded-md p-4" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm"
-                    style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.12em", border: "1px solid #2a2a2f" }}>
+                    style={{ color: theme.accent, fontFamily: F_MONO, letterSpacing: "0.12em", border: "1px solid var(--line)" }}>
                 {it.id}
               </span>
               <button onClick={() => remove(it.id)} className="text-zinc-600 hover:text-red-400 transition"
@@ -1767,8 +2132,8 @@ function CatalogEditor({ title, icon, items, setItems, fields, makeNew, note }) 
 
         <button onClick={add}
                 className="w-full py-2.5 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110 flex items-center justify-center gap-2"
-                style={{ fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "#1c1c20",
-                         color: "#e7e7ea", border: `1px dashed ${theme.accentLine}` }}>
+                style={{ fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "var(--surface-3)",
+                         color: "var(--fg)", border: `1px dashed ${theme.accentLine}` }}>
           <Plus size={14} /> Agregar {title}
         </button>
       </div>
@@ -1789,8 +2154,8 @@ function VehiclesManager() {
     mapTrims(mid, did, (ts) => ts.map((t, idx) => (idx === i ? { ...t, [k]: k === "name" ? v : Number(v) } : t)));
 
   const dashBtn = {
-    fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "#1c1c20",
-    color: "#e7e7ea", border: `1px dashed ${theme.accentLine}`,
+    fontFamily: F_DISPLAY, letterSpacing: "0.08em", background: "var(--surface-3)",
+    color: "var(--fg)", border: `1px dashed ${theme.accentLine}`,
   };
 
   return (
@@ -1812,7 +2177,7 @@ function VehiclesManager() {
         </p>
 
         {vehCat.makes.map((m) => (
-          <div key={m.id} className="rounded-md p-4" style={{ background: "#101013", border: "1px solid #22222a" }}>
+          <div key={m.id} className="rounded-md p-4" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
             {/* Marca */}
             <div className="flex items-end gap-3 mb-3">
               <div className="flex-1 max-w-xs">
@@ -1828,7 +2193,7 @@ function VehiclesManager() {
             {/* Modelos de la marca */}
             <div className="space-y-3 pl-3" style={{ borderLeft: `2px solid ${theme.accentLine}` }}>
               {(m.models || []).map((d) => (
-                <div key={d.id} className="rounded-sm p-3" style={{ background: "#0c0c0f", border: "1px solid #22222a" }}>
+                <div key={d.id} className="rounded-sm p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
                   <div className="flex items-end gap-3 mb-2">
                     <div className="flex-1 max-w-xs">
                       <AdminField label="Modelo">
@@ -1892,7 +2257,7 @@ function StagesManager() {
       note='El "Stage mínimo" de los rines apunta al número de Stage. Los componentes van uno por línea.'
       makeNew={(its) => ({
         id: Math.max(0, ...its.map((x) => x.id)) + 1,
-        name: "Nuevo Stage", price: 0, lift: '0"', desc: "", kit: ["Componente 1"],
+        name: "Dynopro Sport Package", price: 0, lift: '0"', desc: "", kit: ["Componente 1"],
       })}
       fields={[
         { k: "name",  label: "Nombre",       type: "text",   span: "md:col-span-5" },
@@ -1966,7 +2331,7 @@ function LeadsConsole() {
     <AdminPanel title={`Consola de Datos · Leads (${leads.length})`} icon={Send}>
       {leads.length === 0 ? (
         <div className="py-10 text-center">
-          <Send size={26} color="#3a3a40" className="mx-auto" />
+          <Send size={26} color="currentColor" style={{ color: "var(--line-strong)" }} className="mx-auto" />
           <p className="mt-3 text-sm text-zinc-500" style={{ fontFamily: F_BODY }}>
             Sin envíos todavía. Los builds enviados desde "Ármalo tú mismo" aparecerán aquí.
           </p>
@@ -1983,7 +2348,7 @@ function LeadsConsole() {
             </thead>
             <tbody>
               {leads.map((l) => (
-                <tr key={l.id} style={{ borderBottom: "1px solid #1c1c22" }}>
+                <tr key={l.id} style={{ borderBottom: "1px solid var(--line)" }}>
                   <td className="px-3 py-3 text-xs text-zinc-400 whitespace-nowrap" style={{ fontFamily: F_MONO }}>{l.when}</td>
                   <td className="px-3 py-3 text-xs text-white font-semibold whitespace-nowrap" style={{ fontFamily: F_BODY }}>{l.vehicle}</td>
                   <td className="px-3 py-3 text-xs text-zinc-300 whitespace-nowrap" style={{ fontFamily: F_BODY }}>{l.stage}</td>
@@ -2084,7 +2449,7 @@ function PageHead({ eyebrow, title, sub }) {
 function EmptyState({ icon: Icon, text }) {
   return (
     <div className="py-20 text-center">
-      <Icon size={38} color="#3a3a40" className="mx-auto" />
+      <Icon size={38} color="currentColor" style={{ color: "var(--line-strong)" }} className="mx-auto" />
       <p className="mt-4 text-zinc-500" style={{ fontFamily: F_BODY }}>{text}</p>
     </div>
   );
@@ -2094,13 +2459,13 @@ function EmptyState({ icon: Icon, text }) {
 function SafeImg({ src, alt, ratio = "16 / 9", className = "" }) {
   const [ok, setOk] = useState(true);
   return (
-    <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: ratio, background: "#0f0f12" }}>
+    <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: ratio, background: "var(--surface-2)" }}>
       {ok && src ? (
         <img src={src} alt={alt || ""} className="absolute inset-0 w-full h-full"
              style={{ objectFit: "cover" }} loading="lazy" onError={() => setOk(false)} />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center" style={carbon}>
-          <ImageIcon size={26} color="#3a3a40" />
+          <ImageIcon size={26} color="currentColor" style={{ color: "var(--line-strong)" }} />
         </div>
       )}
     </div>
@@ -2125,7 +2490,7 @@ function EventsView() {
           {events.map((ev) => (
             <Reveal key={ev.id}>
               <article className="flex flex-col h-full rounded-md overflow-hidden"
-                       style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                       style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
                 <SafeImg src={ev.imageUrl} alt={ev.title} />
                 <div className="p-5 flex flex-col flex-1">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase mb-2"
@@ -2162,7 +2527,7 @@ function CoursesView() {
           {courses.map((co) => (
             <Reveal key={co.id}>
               <article className="flex flex-col h-full rounded-md overflow-hidden"
-                       style={{ background: "#141417", border: "1px solid #2a2a2f" }}>
+                       style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
                 <SafeImg src={co.imageUrl} alt={co.title} />
                 <div className="p-5 flex flex-col flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -2224,13 +2589,13 @@ function GalleryView() {
             <Reveal key={g.id}>
               {/* Regla: solo foto. El overlay de texto aparece SOLO si optionalText tiene contenido. */}
               <div className="relative rounded-md overflow-hidden group"
-                   style={{ border: "1px solid #2a2a2f" }}>
+                   style={{ border: "1px solid var(--line)" }}>
                 <SafeImg src={g.imageUrl} alt={g.optionalText || `${g.make} ${g.model}`} ratio="1 / 1" />
                 {g.optionalText && g.optionalText.trim() !== "" && (
-                  <div className="absolute inset-x-0 bottom-0 p-3"
+                  <div className="dp-dark absolute inset-x-0 bottom-0 p-3"
                        style={{ background: "linear-gradient(180deg, transparent, rgba(8,8,10,0.9))" }}>
                     <span className="text-xs font-semibold uppercase text-white"
-                          style={{ fontFamily: F_DISPLAY, letterSpacing: "0.04em", textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>
+                          style={{ fontFamily: F_DISPLAY, letterSpacing: "0.04em", textShadow: "0 1px 6px rgb(0 0 0 / calc(0.9 * var(--sh-k)))" }}>
                       {g.optionalText}
                     </span>
                   </div>
@@ -2265,7 +2630,7 @@ function ProductManager() {
               <input value={product.subtitle} onChange={(e) => set("subtitle", e.target.value)} className={inp} style={inputStyle} /></AdminField></div>
           </div>
           {product.tires.map((t) => (
-            <div key={t.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 rounded-md p-3" style={{ background: "#101013", border: "1px solid #22222a" }}>
+            <div key={t.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 rounded-md p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
               <div className="md:col-span-2 flex items-end pb-2">
                 <span className="text-lg font-bold text-white" style={{ fontFamily: F_DISPLAY }}>Llantas {t.label}</span>
               </div>
@@ -2326,15 +2691,15 @@ function AdminLogin() {
   const onKey = (e) => { if (e.key === "Enter") submit(); };
 
   const field = {
-    background: "#101013", color: "#f2f2f4",
-    border: "1px solid #2a2a2f", fontFamily: F_BODY,
+    background: "var(--surface-2)", color: "var(--fg)",
+    border: "1px solid var(--line)", fontFamily: F_BODY,
   };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
       <div className="mx-auto" style={{ maxWidth: 430 }}>
         <div className="rounded-md p-7"
-             style={{ ...carbon, border: "1px solid #2a2a2f", boxShadow: "0 24px 60px rgba(0,0,0,0.55)" }}>
+             style={{ ...carbon, border: "1px solid var(--line)", boxShadow: "0 24px 60px rgb(0 0 0 / calc(0.55 * var(--sh-k)))" }}>
 
           <div className="flex items-center justify-center mb-5">
             <div className="flex items-center justify-center rounded-md"
@@ -2436,7 +2801,7 @@ function AdminView() {
    NAV DE DESARROLLO (conmuta vistas) + ROOT
    ==========================================================================*/
 function DevNav() {
-  const { view, setView, brand, theme, leads } = useStore();
+  const { view, setView, brand, theme, leads, mode, toggleMode } = useStore();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -2463,7 +2828,7 @@ function DevNav() {
   const activeMenu = menu.find((m) => m.id === view);
 
   return (
-    <nav className="sticky top-0 z-50 border-b" style={{ background: "rgba(10,10,11,0.9)", backdropFilter: "blur(8px)", borderColor: "#1e1e22" }}>
+    <nav className="sticky top-0 z-50 border-b" style={{ background: "var(--nav-bg)", backdropFilter: "blur(8px)", borderColor: "var(--line)" }}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <button onClick={() => setView("client")} className="flex items-center gap-2" title="Ir al inicio">
           {brand.logoUrl ? (
@@ -2474,7 +2839,7 @@ function DevNav() {
             </span>
           )}
           <span className="hidden md:inline text-[10px] px-2 py-0.5 rounded-sm uppercase text-zinc-500"
-                style={{ border: "1px solid #2a2a2f", fontFamily: F_MONO, letterSpacing: "0.1em" }}>dev preview</span>
+                style={{ border: "1px solid var(--line)", fontFamily: F_MONO, letterSpacing: "0.1em" }}>dev preview</span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -2486,13 +2851,21 @@ function DevNav() {
                       className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
                       style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
                                background: on ? theme.accent : "transparent",
-                               color: on ? "#0a0a0b" : "#a8a8b0",
-                               border: `1px solid ${on ? theme.accent : "#2a2a2f"}` }}>
+                               color: on ? "#0a0a0b" : "var(--fg-2)",
+                               border: `1px solid ${on ? theme.accent : "var(--line)"}` }}>
                 <Icon size={14} />
                 <span className="hidden sm:inline">{t.label}</span>
               </button>
             );
           })}
+
+          {/* Claro / oscuro */}
+          <button onClick={toggleMode} title={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                  aria-label={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                  className="flex items-center justify-center rounded-sm transition hover:brightness-110"
+                  style={{ width: 36, height: 34, border: "1px solid var(--line)", color: "var(--fg-2)", background: "transparent" }}>
+            {mode === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
 
           {/* Menú desplegable */}
           <div style={{ position: "relative" }} ref={menuRef}>
@@ -2500,8 +2873,8 @@ function DevNav() {
                     className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase font-semibold rounded-sm transition hover:brightness-110"
                     style={{ fontFamily: F_DISPLAY, letterSpacing: "0.06em",
                              background: activeMenu ? theme.accent : "transparent",
-                             color: activeMenu ? "#0a0a0b" : "#a8a8b0",
-                             border: `1px solid ${activeMenu ? theme.accent : "#2a2a2f"}` }}>
+                             color: activeMenu ? "#0a0a0b" : "var(--fg-2)",
+                             border: `1px solid ${activeMenu ? theme.accent : "var(--line)"}` }}>
               <Menu size={14} />
               <span className="hidden sm:inline">{activeMenu ? activeMenu.label : "Menú"}</span>
               <ChevronDown size={13} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
@@ -2513,10 +2886,10 @@ function DevNav() {
             {open && (
               <div className="absolute right-0 mt-2 py-1.5 rounded-md overflow-hidden"
                    style={{ minWidth: 210, zIndex: 60,
-                            background: "rgba(18,18,21,0.92)",
+                            background: "var(--glass-strong)",
                             backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                            border: "1px solid rgba(255,255,255,0.10)",
-                            boxShadow: "0 16px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.10)" }}>
+                            border: "1px solid var(--glass-line)",
+                            boxShadow: "0 16px 44px rgb(0 0 0 / calc(0.6 * var(--sh-k))), inset 0 1px 0 rgba(255,255,255,0.10)" }}>
                 {menu.map((m) => {
                   const on = view === m.id;
                   const Icon = m.icon;
@@ -2525,8 +2898,8 @@ function DevNav() {
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition hover:brightness-125"
                             style={{ fontFamily: F_BODY, textAlign: "left",
                                      background: on ? theme.accentSoft : "transparent",
-                                     color: on ? "#fff" : "#c9c9cf" }}>
-                      <Icon size={15} color={on ? theme.accent : "#8a8a92"} />
+                                     color: on ? "#fff" : "var(--fg-2)" }}>
+                      <Icon size={15} color="currentColor" style={{ color: on ? theme.accent : "var(--fg-3)" }} />
                       <span className="flex-1">{m.label}</span>
                       {m.id === "admin" && leads.length > 0 && (
                         <span className="text-[10px] px-1.5 rounded-full" style={{ background: theme.accent, color: "#0a0a0b", fontFamily: F_MONO }}>{leads.length}</span>
@@ -2593,15 +2966,63 @@ function CursorGlow() {
         <div key={i} ref={(el) => (refs.current[i] = el)}
              style={{ position: "absolute", left: 0, top: 0, width: b.s, height: b.s,
                       borderRadius: "50%", opacity: b.o, filter: `blur(${b.b}px)`,
-                      mixBlendMode: "screen", willChange: "transform",
+                      mixBlendMode: "var(--glow-blend)", willChange: "transform",
                       background: `radial-gradient(circle, ${theme.accent} 0%, transparent 68%)` }} />
       ))}
     </div>
   );
 }
 
+/* ---------------------------------------------------------------------------
+   FONDO TECH: cuadrícula tenue de cruces fija detrás del contenido. Cada pocos
+   segundos una línea neón (color de acento) recorre una fila o columna de la
+   cuadrícula y enciende una cruz al pasar. Sin animación si el usuario pidió
+   reducir movimiento, y en pausa con la pestaña oculta.
+   -------------------------------------------------------------------------*/
+function TechBackdrop() {
+  const [lines, setLines] = useState([]);
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+    const G = 56;
+    const snap = (v) => Math.round(v / G) * G;
+    let alive = true, timer;
+    const spawn = () => {
+      if (!document.hidden) {
+        const horiz = Math.random() < 0.6;
+        const w = window.innerWidth, h = window.innerHeight;
+        const pos = snap((0.08 + Math.random() * 0.84) * (horiz ? h : w));
+        const at = snap((0.15 + Math.random() * 0.7) * (horiz ? w : h));
+        const dur = 2.4 + Math.random() * 1.4;
+        const id = Date.now() + Math.random();
+        setLines((ls) => [...ls.slice(-2), { id, horiz, pos, at, dur, rev: Math.random() < 0.5 }]);
+        setTimeout(() => alive && setLines((ls) => ls.filter((l) => l.id !== id)), dur * 1000 + 600);
+      }
+      timer = setTimeout(spawn, 3800 + Math.random() * 4200);
+    };
+    timer = setTimeout(spawn, 1400);
+    return () => { alive = false; clearTimeout(timer); };
+  }, []);
+
+  return (
+    <div aria-hidden="true" className="dp-grid"
+         style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+      {lines.map((l) => (
+        <Fragment key={l.id}>
+          <span className={`dp-neon ${l.horiz ? "h" : "v"}`}
+                style={{ [l.horiz ? "top" : "left"]: l.pos,
+                         animation: `${l.horiz ? "dp-neon-x" : "dp-neon-y"} ${l.dur}s cubic-bezier(.45,0,.35,1) both`,
+                         animationDirection: l.rev ? "reverse" : "normal" }} />
+          <span className="dp-cross"
+                style={{ left: l.horiz ? l.at : l.pos, top: l.horiz ? l.pos : l.at,
+                         animation: `dp-cross-on 1.6s ease-out ${(l.dur * 0.5).toFixed(2)}s both` }} />
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
 function Shell() {
-  const { view, theme } = useStore();
+  const { view, theme, mode } = useStore();
   // Carga de fuentes (si hay red); si falla, los fallbacks mantienen el diseño.
   useEffect(() => {
     const id = "dp-fonts";
@@ -2610,6 +3031,65 @@ function Shell() {
     link.id = id; link.rel = "stylesheet";
     link.href = "https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap";
     document.head.appendChild(link);
+  }, []);
+
+  // Paletas clara/oscura como variables CSS. ".dp-dark" fuerza el oscuro en
+  // las secciones de foto y en el Panel Admin, aunque la web esté en claro.
+  useEffect(() => {
+    const id = "dp-theme";
+    let st = document.getElementById(id);
+    if (!st) { st = document.createElement("style"); st.id = id; document.head.appendChild(st); }
+    const cross = (c) => `url("data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'><path d='M28 23v10M23 28h10' stroke='${c}' stroke-width='1'/></svg>`)}")`;
+    st.textContent = `
+      .dp-app {
+        --bg: #ffffff; --surface: #ffffff; --surface-2: #f5f5f6; --surface-3: #ececef;
+        --carbon: #fafafa; --carbon-line: rgba(10,10,11,0.035);
+        --line: #e2e2e6; --line-strong: #c2c2c8;
+        --fg: #0a0a0b; --fg-2: #2b2b30; --fg-3: #52525b; --fg-4: #6b6b74; --fg-5: #9a9aa3;
+        --glass: rgba(255,255,255,0.72); --glass-strong: rgba(255,255,255,0.95); --glass-line: rgba(10,10,11,0.08);
+        --nav-bg: rgba(255,255,255,0.86); --sh-k: 0.3; --glow-blend: multiply;
+        --grid-cross: ${cross("rgba(10,10,11,0.10)")};
+        color-scheme: light;
+      }
+      .dp-app[data-mode="dark"], .dp-app .dp-dark {
+        --bg: #0a0a0b; --surface: #141417; --surface-2: #101013; --surface-3: #1c1c20;
+        --carbon: #0b0b0d; --carbon-line: rgba(255,255,255,0.022);
+        --line: #2a2a2f; --line-strong: #3a3a40;
+        --fg: #f2f2f4; --fg-2: #d4d4d8; --fg-3: #a1a1aa; --fg-4: #71717a; --fg-5: #52525b;
+        --glass: rgba(18,18,21,0.55); --glass-strong: rgba(18,18,21,0.92); --glass-line: rgba(255,255,255,0.10);
+        --nav-bg: rgba(10,10,11,0.9); --sh-k: 1; --glow-blend: screen;
+        --grid-cross: ${cross("rgba(255,255,255,0.07)")};
+        color-scheme: dark;
+      }
+      .dp-app .text-white { color: var(--fg); }
+      .dp-app .text-zinc-200 { color: var(--fg); }
+      .dp-app .text-zinc-300 { color: var(--fg-2); }
+      .dp-app .text-zinc-400 { color: var(--fg-3); }
+      .dp-app .text-zinc-500 { color: var(--fg-4); }
+      .dp-app .text-zinc-600 { color: var(--fg-5); }
+      .dp-app .hover\\:text-white:hover, .dp-app .hover\\:text-zinc-200:hover { color: var(--fg); }
+      .dp-app .hover\\:text-zinc-300:hover { color: var(--fg-2); }
+      .dp-app .border-b, .dp-app .border-t { border-color: var(--line); }
+
+      /* Tira de vehículos: sin barra de scroll */
+      .dp-strip { scrollbar-width: none; -ms-overflow-style: none; }
+      .dp-strip::-webkit-scrollbar { display: none; }
+
+      /* Fondo tech: cuadrícula de cruces + líneas neón ocasionales */
+      .dp-app .dp-grid { background-image: var(--grid-cross); background-size: 56px 56px; background-position: -28px -28px; }
+      .dp-neon { position: absolute; border-radius: 2px; background: var(--accent);
+                 box-shadow: 0 0 6px 1px var(--accent-glow), 0 0 18px 3px var(--accent-glow); }
+      .dp-neon.h { height: 1.5px; width: 34vw; left: 0; background: linear-gradient(90deg, transparent, var(--accent) 70%, #ffd9d9); }
+      .dp-neon.v { width: 1.5px; height: 34vh; top: 0; background: linear-gradient(180deg, transparent, var(--accent) 70%, #ffd9d9); }
+      .dp-cross { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+                  background: linear-gradient(var(--accent), var(--accent)) center / 100% 1.5px no-repeat,
+                              linear-gradient(var(--accent), var(--accent)) center / 1.5px 100% no-repeat;
+                  filter: drop-shadow(0 0 4px var(--accent-glow)) drop-shadow(0 0 10px var(--accent-glow)); }
+      @keyframes dp-neon-x { 0% { transform: translateX(-34vw); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(100vw); opacity: 0; } }
+      @keyframes dp-neon-y { 0% { transform: translateY(-34vh); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
+      @keyframes dp-cross-on { 0% { opacity: 0; transform: scale(0.5); } 18% { opacity: 1; transform: scale(1.25); } 40% { transform: scale(1); } 100% { opacity: 0; } }
+    `;
   }, []);
 
   // Keyframes de animaciones (callout y cabecera del build). Se reescribe siempre.
@@ -2684,19 +3164,25 @@ function Shell() {
   return (
     <div
       className="dp-app"
+      data-mode={mode}
       style={{
-        minHeight: "100vh", background: "#0a0a0b", fontFamily: F_BODY,
+        minHeight: "100vh", background: "var(--bg)", color: "var(--fg)", fontFamily: F_BODY, position: "relative",
         // tokens de acento accesibles vía var(--accent) en todo el árbol
         "--accent": theme.accent, "--accent-glow": theme.accentGlow, "--accent-soft": theme.accentSoft,
       }}
     >
-      <DevNav />
-      {view === "admin" ? <AdminView />
-        : view === "events" ? <EventsView />
-        : view === "courses" ? <CoursesView />
-        : view === "gallery" ? <GalleryView />
-        : view === "product" ? <ProductView />
-        : <ClientView />}
+      {view !== "admin" && <TechBackdrop />}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <DevNav />
+        {view === "admin" ? (
+          <div className="dp-dark" style={{ background: "var(--bg)", color: "var(--fg)", minHeight: "calc(100vh - 64px)" }}><AdminView /></div>
+        ) : view === "events" ? <EventsView />
+          : view === "courses" ? <CoursesView />
+          : view === "gallery" ? <GalleryView />
+          : view === "product" ? <ProductView />
+          : view === "build" ? <BuildView />
+          : <ClientView />}
+      </div>
       <CursorGlow />
     </div>
   );
